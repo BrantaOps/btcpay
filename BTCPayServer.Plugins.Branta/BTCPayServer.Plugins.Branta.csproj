@@ -7,7 +7,7 @@
   <PropertyGroup>
     <Product>Branta</Product>
     <Description>Easily verify payments, checkouts, and invoices.</Description>
-    <Version>0.0.6</Version>
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
   <!-- Plugin development properties -->
