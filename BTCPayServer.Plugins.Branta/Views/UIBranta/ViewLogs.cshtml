@@ -1,0 +1,110 @@
+﻿@using BTCPayServer.Abstractions.Extensions
+@using BTCPayServer.Plugins.Branta.Enums
+@using BTCPayServer.Plugins.Branta.Models
+@using BTCPayServer.Plugins.Branta.Services
+@using BTCPayServer.Plugins.Branta.Views
+@using System.Text.RegularExpressions
+
+@model InvoiceDataViewModel
+
+@{
+    Layout = "~/Views/Shared/_SettingsLayout.cshtml";
+    ViewData["BrantaSettingsActiveTab"] = "ViewLogs";
+    ViewData.SetActivePage(BrantaNavPages.Index, "Branta - Logs");
+
+    int pageWindow = 2;
+    int startPage = Math.Max(1, Model.CurrentPage - pageWindow);
+    int endPage = Math.Min(Model.TotalPages, Model.CurrentPage + pageWindow);
+}
+
+<div>
+    Logs will be deleted after @CleanUpInvoiceService.DeleteAfterDays days.
+</div>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Invoice ID</th>
+            <th>Environment</th>
+            <th>Status</th>
+            <th>Failure Reason</th>
+            <th>Verify Link</th>
+            <th>Processing Time (ms)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var invoice in Model.Invoices)
+        {
+            <tr>
+                <td>@invoice.DateCreated.ToLocalTime().ToString("M/d/yy, h:mm tt")</td>
+                <td>@invoice.InvoiceId</td>
+                <td>@invoice.Environment</td>
+                <td style="@(invoice.Status switch {
+                        InvoiceDataStatus.Success => "color: #4AB15E",
+                        InvoiceDataStatus.Failure => "color: #B15E4A",
+                        _ => ""
+                    })">@invoice.Status</td>
+                <td>@invoice.FailureReason</td>
+                <td>
+                    @if (invoice.VerifyLink != null)
+                    {
+                        <a href="@invoice.VerifyLink" target="_blank">
+                            Verify
+                        </a>
+                    }
+                    else if (invoice.Status == InvoiceDataStatus.Success)
+                    {
+                        <span>Expired</span>
+                    }
+                </td>
+                <td>@(invoice.ProcessingTime > 0 ? invoice.ProcessingTime : "")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<nav>
+    <ul class="pagination">
+        @if (Model.TotalPages > 10)
+        {
+            if (startPage > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@($"/stores/{Model.StoreId}/plugins/branta/logs?page=1")">1</a>
+                </li>
+                if (startPage > 2)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+            }
+
+            for (int i = startPage; i <= endPage; i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="@($"/stores/{Model.StoreId}/plugins/branta/logs?page={i}")">@i</a>
+                </li>
+            }
+
+            if (endPage < Model.TotalPages)
+            {
+                if (endPage < Model.TotalPages - 1)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+                <li class="page-item">
+                    <a class="page-link" href="@($"/stores/{Model.StoreId}/plugins/branta/logs?page={Model.TotalPages}")">@Model.TotalPages</a>
+                </li>
+            }
+        }
+        else
+        {
+            for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" href="@($"/stores/{Model.StoreId}/plugins/branta/logs?page={i}")">@i</a>
+                </li>
+            }
+        }
+    </ul>
+</nav>

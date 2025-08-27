@@ -1,0 +1,97 @@
+@using BTCPayServer.Abstractions.Extensions
+@using BTCPayServer.Plugins.Branta.Models
+@using BTCPayServer.Plugins.Branta.Views
+
+@model BTCPayServer.Plugins.Branta.Models.BrantaSettingsViewModel
+
+@{
+    Layout = "~/Views/Shared/_SettingsLayout.cshtml";
+    ViewData["BrantaSettingsActiveTab"] = "EditBranta";
+    ViewData.SetActivePage(BrantaNavPages.Index, "Branta - Settings");
+}
+
+@section PageHeadContent {
+    <style>
+        .input-container {
+            position: relative;
+        }
+
+        .toggle-show-secret {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+
+        .icon-actions-show,
+        .icon-actions-hide {
+            height: 24px;
+            width: 24px;
+        }
+    </style>
+}
+
+@section PageFootContent {
+    <script>
+        $(document).on('click', '.toggle-show-secret', function (e) {
+            e.preventDefault();
+            var targetId = $(this).data('target');
+            var targetInput = $(targetId);
+            var show = targetInput.attr('type') == 'password';
+            targetInput.attr('type', show ? 'text' : 'password');
+
+            $(targetId + 'IconShow').css('display', show ? 'none' : 'block');
+            $(targetId + 'IconHide').css('display', show ? 'block' : 'none');
+        });
+    </script>
+}
+
+<partial name="_StatusMessage" />
+
+@if (!Model.Settings.BrantaEnabled)
+{
+    <div class="alert alert-warning my-4" role="alert">
+        <span><strong>Branta is not enabled.</strong> Enable Branta to use features in this workspace.</span>
+    </div>
+}
+else if (string.IsNullOrEmpty(Model.Settings.ProductionApiKey))
+{
+    <div class="alert alert-warning my-4" role="alert">
+        <span><strong>Missing API Key.</strong> Valid API Key is required for Branta to work.</span>
+    </div>
+}
+else
+{
+    <div class="alert alert-success my-4" role="alert">
+        <span><strong>Branta is enabled!</strong> You can now create invoices and verify with Branta on the invoice checkout page.</span>
+    </div>
+}
+
+<div style="max-width: 800px;">
+
+    <form method="post" id="brantaForm">
+        <div class="form-group">
+            <label asp-for="Settings.BrantaEnabled" class="form-label" style="padding-right: 10px;"></label>
+            <input asp-for="Settings.BrantaEnabled" type="checkbox" class="btcpay-toggle" />
+            <p class="text-secondary mt-2">By using Branta, you agree to our <a href="https://branta.pro/business_terms" target="_blank">Terms</a></p>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Settings.ProductionApiKey" class="form-label"></label>
+            <div class="input-container">
+                <input id="ProductionApiKey" type="password" asp-for="Settings.ProductionApiKey" value="@Model.Settings.ProductionApiKey" class="form-control" />
+                <div class="toggle-show-secret" data-target="#ProductionApiKey">
+                    <span id="ProductionApiKeyIconShow"><vc:icon symbol="actions-show" /></span>
+                    <span id="ProductionApiKeyIconHide" style="display: none"><vc:icon symbol="actions-hide" /></span>
+                </div>
+            </div>
+            <span asp-validation-for="Settings.ProductionApiKey" class="text-danger"></span>
+            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl()/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
+        </div>
+
+        <button name="command" type="submit" class="btn btn-primary mt-3" value="BrantaSaveSettings">
+            Save
+        </button>
+    </form>
+</div>

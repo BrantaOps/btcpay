@@ -1,0 +1,38 @@
+name: Build & Package on Tag (Linux)
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish .NET project
+        run: dotnet publish BTCPayServer.Plugins.Branta/BTCPayServer.Plugins.Branta.csproj -c Release -o ./publish
+
+      - run: |
+          cd publish
+          zip -r ../BTCPayServer.Plugins.Branta.zip .
+
+      - name: Rename .zip to .btcpay with tag version
+        run: |
+          mv BTCPayServer.Plugins.Branta.zip BTCPayServer.Plugins.Branta.btcpay
+
+      - name: Upload .btcpay file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ format('branta-btcpay-{0}', github.ref_name) }}
+          path: BTCPayServer.Plugins.Branta.btcpay

@@ -1,0 +1,22 @@
+@using BTCPayServer
+@using BTCPayServer.Data
+@using BTCPayServer.Plugins.Branta.Classes
+@using BTCPayServer.Plugins.Branta.Interfaces
+@using BTCPayServer.Services.Stores
+@model BTCPayServer.Models.InvoicingModels.CheckoutModel
+
+@inject IBrantaService brantaService;
+
+@{
+    var url = await brantaService.CreateInvoiceIfNotExistsAsync(Model);
+}
+
+@if (url != null)
+{
+    <div style="flex-basis: 100%; width: 100%; display: flex; justify-content: center; align-items: center;">
+        <a style="display: flex; flex-direction: row; align-items: center; gap: 8px" href="@url" target="_blank">
+            <span>Click to verify with </span>
+            <span style="color: var(--btcpay-body-text); width: 130px">@Html.Partial("Branta/_Logo")</span>
+        </a>
+    </div>
+}
