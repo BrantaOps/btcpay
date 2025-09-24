@@ -17,12 +17,17 @@ public class BrantaClient(IHttpClientFactory httpClientFactory)
         var json = JsonConvert.SerializeObject(paymentRequest);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        content.Headers.Add("Authorization", $"Bearer {brantaSettings.ProductionApiKey}");
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{PaymentVersion}/payments")
+        {
+            Content = content
+        };
+
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", brantaSettings.ProductionApiKey);
 
         var httpClient = httpClientFactory.CreateClient();
         httpClient.BaseAddress = new Uri(BrantaSettings.GetBrantaServerUrl());
 
-        var response = await httpClient.PostAsync($"{PaymentVersion}/payments", content);
+        var response = await httpClient.SendAsync(request);
 
         if (response.StatusCode != HttpStatusCode.Created)
         {
