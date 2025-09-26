@@ -1,4 +1,5 @@
 @using System.Text.RegularExpressions
+@using BTCPayServer.Plugins.Branta.Classes
 
 @{
     Layout = "_Layout";
@@ -13,17 +14,28 @@
     @RenderSection("PageFootContent", required: false)
 }
 
-<div class="mt-1 mb-4" style="width: 350px">
-    @Html.Partial("Branta/_Logo")
-</div>
+<style>
+    section {
+        display: flex;
+    }
+</style>
 
-<nav id="SectionNav" class="mb-3">
-    <div class="nav">
-    <a href="@urlPath" class="nav-link @((string)ViewData["BrantaSettingsActiveTab"] == "EditBranta" ? "active" : "")" role="tab">Settings</a>
-    <a href="@urlPath/logs?page=1" class="nav-link @((string)ViewData["BrantaSettingsActiveTab"] == "ViewLogs" ? "active" : "")" role="tab">Logs</a>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+    <div class="mt-1" style="width: 350px">
+        @Html.Partial("Branta/_Logo")
     </div>
-</nav>
 
-<div class="settings-body">
-    @RenderBody()
+    <nav id="SectionNav">
+        <div class="nav">
+            <a href="@urlPath" class="nav-link @((string)ViewData["BrantaSettingsActiveTab"] == "EditBranta" ? "active" : "")" role="tab">Settings</a>
+            <a href="@urlPath/logs?page=1" class="nav-link @((string)ViewData["BrantaSettingsActiveTab"] == "ViewLogs" ? "active" : "")" role="tab">Logs</a>
+        </div>
+    </nav>
+
+    <div style="flex: 1;">
+        @RenderBody()
+    </div>
+
+    <div class="text-secondary" style="text-align: right;">v@(Helper.GetVersion())</div>
 </div>
+
