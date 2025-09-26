@@ -17,8 +17,8 @@ public class BrantaSettings
     [Display(Name = "API Key")]
     public string ProductionApiKey { get; set; }
 
-    [Display(Name = "Enable Production")]
-    public bool ProductionEnabled { get; set; } = false;
+    [Display(Name = "Enable Staging")]
+    public bool StagingEnabled { get; set; } = false;
 
     [Display(Name = "Enable Branta")]
     public bool BrantaEnabled { get; set; } = false;
@@ -26,7 +26,17 @@ public class BrantaSettings
     [Display(Name = "Show Checkout Info on Verification Page")]
     public bool PostDescriptionEnabled { get; set; } = false;
 
-    public static string GetBrantaServerUrl(ServerEnvironment environment = ServerEnvironment.Production)
+    public string GetAPIKey()
+    {
+        return StagingEnabled ? StagingApiKey : ProductionApiKey;
+    }
+
+    public string GetBrantaServerUrl()
+    {
+        return GetBrantaServerUrl(StagingEnabled ? ServerEnvironment.Staging : ServerEnvironment.Production);
+    }
+
+    public static string GetBrantaServerUrl(ServerEnvironment environment)
     {
         if (Debugger.IsAttached)
         {
