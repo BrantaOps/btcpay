@@ -88,8 +88,7 @@ public class BrantaService(
                     payment = payments.First(),
                     alt_payments = [.. payments.Skip(1)],
                     ttl = ttl.ToString(),
-                    btcPayServerPluginVersion = Helper.GetVersion(),
-                    value = ToSats(checkoutModel.OrderAmount)
+                    btcPayServerPluginVersion = Helper.GetVersion()
                 }
             };
 
@@ -113,12 +112,5 @@ public class BrantaService(
         await invoiceService.AddAsync(invoiceData);
 
         return invoiceData;
-    }
-
-    private static long ToSats(string orderAmount)
-    {
-        decimal btcAmount = decimal.Parse(orderAmount, CultureInfo.InvariantCulture);
-
-        return (long)(btcAmount * 100_000_000m);
     }
 }
