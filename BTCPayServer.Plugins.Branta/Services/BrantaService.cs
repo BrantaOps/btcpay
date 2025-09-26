@@ -3,10 +3,8 @@ using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
@@ -88,8 +86,7 @@ public class BrantaService(
                     payment = payments.First(),
                     alt_payments = [.. payments.Skip(1)],
                     ttl = ttl.ToString(),
-                    btcPayServerPluginVersion = Helper.GetVersion(),
-                    value = ToSats(checkoutModel.OrderAmount)
+                    btcPayServerPluginVersion = Helper.GetVersion()
                 }
             };
 
@@ -113,12 +110,5 @@ public class BrantaService(
         await invoiceService.AddAsync(invoiceData);
 
         return invoiceData;
-    }
-
-    private static long ToSats(string orderAmount)
-    {
-        decimal btcAmount = decimal.Parse(orderAmount, CultureInfo.InvariantCulture);
-
-        return (long)(btcAmount * 100_000_000m);
     }
 }
