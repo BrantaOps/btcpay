@@ -90,6 +90,12 @@ else
             <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl()/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
         </div>
 
+        <div class="form-group">
+            <label asp-for="Settings.PostDescriptionEnabled" class="form-label" style="padding-right: 10px;"></label>
+            <input asp-for="Settings.PostDescriptionEnabled" type="checkbox" class="btcpay-toggle" />
+            <div class="text-secondary mt-2">This will show Order ID and Description to users verifying their payment. <i>(Example: Order ID 123456 - foo bar)</i>.</div>
+        </div>
+
         <button name="command" type="submit" class="btn btn-primary mt-3" value="BrantaSaveSettings">
             Save
         </button>

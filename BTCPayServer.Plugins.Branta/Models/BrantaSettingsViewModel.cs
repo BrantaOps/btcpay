@@ -23,6 +23,9 @@ public class BrantaSettings
     [Display(Name = "Enable Branta")]
     public bool BrantaEnabled { get; set; } = false;
 
+    [Display(Name = "Show Checkout Info on Verification Page")]
+    public bool PostDescriptionEnabled { get; set; } = false;
+
     public static string GetBrantaServerUrl(ServerEnvironment environment = ServerEnvironment.Production)
     {
         if (Debugger.IsAttached)
