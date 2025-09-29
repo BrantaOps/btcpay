@@ -20,6 +20,7 @@ public class UIBrantaController(IBrantaSettingsService brantaSettingsService, II
     {
         return View(new BrantaSettingsViewModel()
         {
+            StoreId = storeId,
             Settings = await _brantaSettingsService.GetAsync(storeId)
         });
     }

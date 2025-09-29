@@ -1,4 +1,5 @@
 @using BTCPayServer.Abstractions.Extensions
+@using BTCPayServer.Plugins.Branta.Classes
 @using BTCPayServer.Plugins.Branta.Enums
 @using BTCPayServer.Plugins.Branta.Models
 @using BTCPayServer.Plugins.Branta.Views
@@ -143,6 +144,14 @@ else
                 <label asp-for="Settings.StagingEnabled" class="form-label" style="padding-right: 10px;"></label>
                 <input asp-for="Settings.StagingEnabled" type="checkbox" class="btcpay-toggle" />
                 <div class="text-secondary mt-2">Request will be made to the Staging environment instead of Production.</div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Settings.TTL" class="form-label" style="padding-right: 10px;"></label>
+                <div class="input-group">
+                    <select asp-for="Settings.TTL" asp-items="Html.GetEnumSelectList<TTLOptions>()" class="form-select"></select>
+                </div>
+                <div class="text-secondary mt-2">Expiration represents time after the BTCPay Server Invoice Expires. You can view that setting <a href="/stores/@Model.StoreId/settings#InvoiceExpiration">here</a>.</div>
             </div>
         </div>
 

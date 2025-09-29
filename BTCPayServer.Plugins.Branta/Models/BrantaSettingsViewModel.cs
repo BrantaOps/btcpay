@@ -1,4 +1,5 @@
-﻿using BTCPayServer.Plugins.Branta.Enums;
+﻿using BTCPayServer.Plugins.Branta.Classes;
+using BTCPayServer.Plugins.Branta.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
@@ -6,6 +7,8 @@ namespace BTCPayServer.Plugins.Branta.Models;
 
 public class BrantaSettingsViewModel
 {
+    public string StoreId { get; set; }
+
     public BrantaSettings Settings { get; set; }
 }
 
@@ -25,6 +28,9 @@ public class BrantaSettings
 
     [Display(Name = "Show Checkout Info on Verification Page")]
     public bool PostDescriptionEnabled { get; set; } = false;
+
+    [Display(Name = "Expire Verification After")]
+    public int TTL { get; set; } = (int)TTLOptions.ThirtyMinutes;
 
     public string GetAPIKey()
     {

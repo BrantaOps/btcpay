@@ -71,7 +71,7 @@ public class BrantaService(
 
         try
         {
-            var ttl = (btcPayInvoice.ExpirationTime.AddMinutes(30) - btcPayInvoice.InvoiceTime).TotalSeconds;
+            var ttl = (btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
             invoiceData.ExpirationDate = now.AddSeconds(ttl);
 
             var paymentRequest = new Classes.PaymentRequest()
