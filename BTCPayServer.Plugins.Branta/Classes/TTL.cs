@@ -4,7 +4,7 @@ namespace BTCPayServer.Plugins.Branta.Classes;
 
 public enum TTLOptions
 {
-    [Display(Name = "30 Minutes")]
+    [Display(Name = "30 minutes")]
     ThirtyMinutes = 30,
 
     [Display(Name = "4 hours")]
