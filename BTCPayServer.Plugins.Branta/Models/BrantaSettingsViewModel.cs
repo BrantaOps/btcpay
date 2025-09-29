@@ -29,7 +29,7 @@ public class BrantaSettings
     [Display(Name = "Show Checkout Info on Verification Page")]
     public bool PostDescriptionEnabled { get; set; } = false;
 
-    [Display(Name = "Expire Verification After")]
+    [Display(Name = "Allow Guardrail verification for")]
     public int TTL { get; set; } = (int)TTLOptions.ThirtyMinutes;
 
     public string GetAPIKey()

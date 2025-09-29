@@ -151,7 +151,7 @@ else
                 <div class="input-group">
                     <select asp-for="Settings.TTL" asp-items="Html.GetEnumSelectList<TTLOptions>()" class="form-select"></select>
                 </div>
-                <div class="text-secondary mt-2">Expiration represents time after the BTCPay Server Invoice Expires. You can view that setting <a href="/stores/@Model.StoreId/settings#InvoiceExpiration">here</a>.</div>
+                <div class="text-secondary mt-2">Represents how long after BTCPay Server Invoice expiration should the payment be deleted from guardrail. You can view Invoice expiration setting <a href="/stores/@Model.StoreId/settings#InvoiceExpiration">here</a>.</div>
             </div>
         </div>
 
