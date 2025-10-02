@@ -55,7 +55,7 @@ public class BrantaService(
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
             PaymentId = payments.First(),
-            Environment = Enums.ServerEnvironment.Production,
+            Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
         };
 
