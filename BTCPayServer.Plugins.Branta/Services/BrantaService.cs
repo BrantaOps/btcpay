@@ -55,7 +55,7 @@ public class BrantaService(
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
             PaymentId = payments.First(),
-            Environment = Enums.ServerEnvironment.Production,
+            Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
         };
 
@@ -71,18 +71,14 @@ public class BrantaService(
 
         try
         {
-            var orderId = btcPayInvoice.Metadata.OrderId;
-            var description = btcPayInvoice.Metadata.ItemDesc;
-            var descPart = string.IsNullOrWhiteSpace(description) ? "" : $" - {description}";
-
-            var ttl = (btcPayInvoice.ExpirationTime.AddMinutes(30) - btcPayInvoice.InvoiceTime).TotalSeconds;
+            var ttl = (btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
             invoiceData.ExpirationDate = now.AddSeconds(ttl);
 
             var paymentRequest = new Classes.PaymentRequest()
             {
                 payment = new Payment
                 {
-                    description = $"Order {orderId}{descPart}",
+                    description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
                     payment = payments.First(),
                     alt_payments = [.. payments.Skip(1)],
                     ttl = ttl.ToString(),
@@ -110,5 +106,14 @@ public class BrantaService(
         await invoiceService.AddAsync(invoiceData);
 
         return invoiceData;
+    }
+
+    private static string GetDescription(InvoiceEntity btcPayInvoice)
+    {
+        var orderId = btcPayInvoice.Metadata.OrderId;
+        var description = btcPayInvoice.Metadata.ItemDesc;
+        var descPart = string.IsNullOrWhiteSpace(description) ? "" : $" - {description}";
+
+        return $"Order {orderId}{descPart}";
     }
 }

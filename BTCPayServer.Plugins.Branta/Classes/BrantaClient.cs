@@ -22,10 +22,10 @@ public class BrantaClient(IHttpClientFactory httpClientFactory)
             Content = content
         };
 
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", brantaSettings.ProductionApiKey);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", brantaSettings.GetAPIKey());
 
         var httpClient = httpClientFactory.CreateClient();
-        httpClient.BaseAddress = new Uri(BrantaSettings.GetBrantaServerUrl());
+        httpClient.BaseAddress = new Uri(brantaSettings.GetBrantaServerUrl());
 
         var response = await httpClient.SendAsync(request);
 

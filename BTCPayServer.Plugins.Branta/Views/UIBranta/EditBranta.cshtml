@@ -1,4 +1,6 @@
 @using BTCPayServer.Abstractions.Extensions
+@using BTCPayServer.Plugins.Branta.Classes
+@using BTCPayServer.Plugins.Branta.Enums
 @using BTCPayServer.Plugins.Branta.Models
 @using BTCPayServer.Plugins.Branta.Views
 
@@ -28,6 +30,20 @@
         .icon-actions-hide {
             height: 24px;
             width: 24px;
+        }
+
+        .advanced-settings {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .advanced-settings-details {
+            padding: 1.5rem 1rem 0 2.65rem;
+            background: var(--btcpay-bg-tile);
+            padding: 20px;
         }
     </style>
 }
@@ -68,6 +84,13 @@ else
     </div>
 }
 
+@if (Model.Settings.StagingEnabled)
+{
+    <div class="alert alert-warning my-4" role="alert">
+        <span><strong>Heads Up</strong> - Branta is running in Staging Mode. Toggle in Advanced settings below.</span>
+    </div>
+}
+
 <div style="max-width: 800px;">
 
     <form method="post" id="brantaForm">
@@ -87,7 +110,49 @@ else
                 </div>
             </div>
             <span asp-validation-for="Settings.ProductionApiKey" class="text-danger"></span>
-            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl()/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
+            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(ServerEnvironment.Production)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
+        </div>
+
+        <button class="accordion-button collapsed only-for-js ms-0 d-inline-block" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-settings" aria-expanded="false" aria-controls="advanced-settings">
+            <div class="advanced-settings">
+                <div>Advanced Settings</div>
+                <vc:icon symbol="caret-down" />
+            </div>
+        </button>
+
+        <div id="advanced-settings" class="advanced-settings-details collapse">
+            <div class="form-group">
+                <label asp-for="Settings.PostDescriptionEnabled" class="form-label" style="padding-right: 10px;"></label>
+                <input asp-for="Settings.PostDescriptionEnabled" type="checkbox" class="btcpay-toggle" />
+                <div class="text-secondary mt-2">This will show Order ID and Description to users verifying their payment. <i>(Example: Order ID 123456 - foo bar)</i>.</div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Settings.StagingApiKey" class="form-label"></label>
+                <div class="input-container">
+                    <input id="StagingApiKey" type="password" asp-for="Settings.StagingApiKey" value="@Model.Settings.StagingApiKey" class="form-control" />
+                    <div class="toggle-show-secret" data-target="#StagingApiKey">
+                        <span id="StagingApiKeyIconShow"><vc:icon symbol="actions-show" /></span>
+                        <span id="StagingApiKeyIconHide" style="display: none"><vc:icon symbol="actions-hide" /></span>
+                    </div>
+                </div>
+                <span asp-validation-for="Settings.StagingApiKey" class="text-danger"></span>
+                <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(ServerEnvironment.Staging)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Settings.StagingEnabled" class="form-label" style="padding-right: 10px;"></label>
+                <input asp-for="Settings.StagingEnabled" type="checkbox" class="btcpay-toggle" />
+                <div class="text-secondary mt-2">Request will be made to the Staging environment instead of Production.</div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Settings.TTL" class="form-label" style="padding-right: 10px;"></label>
+                <div class="input-group">
+                    <select asp-for="Settings.TTL" asp-items="Html.GetEnumSelectList<TTLOptions>()" class="form-select"></select>
+                </div>
+                <div class="text-secondary mt-2">Represents how long after BTCPay Server Invoice expiration should the payment be deleted from guardrail. You can view Invoice expiration setting <a href="/stores/@Model.StoreId/settings#InvoiceExpiration">here</a>.</div>
+            </div>
         </div>
 
         <button name="command" type="submit" class="btn btn-primary mt-3" value="BrantaSaveSettings">

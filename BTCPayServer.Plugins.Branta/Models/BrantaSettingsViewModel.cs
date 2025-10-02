@@ -1,4 +1,5 @@
-﻿using BTCPayServer.Plugins.Branta.Enums;
+﻿using BTCPayServer.Plugins.Branta.Classes;
+using BTCPayServer.Plugins.Branta.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
@@ -6,6 +7,8 @@ namespace BTCPayServer.Plugins.Branta.Models;
 
 public class BrantaSettingsViewModel
 {
+    public string StoreId { get; set; }
+
     public BrantaSettings Settings { get; set; }
 }
 
@@ -17,13 +20,29 @@ public class BrantaSettings
     [Display(Name = "API Key")]
     public string ProductionApiKey { get; set; }
 
-    [Display(Name = "Enable Production")]
-    public bool ProductionEnabled { get; set; } = false;
+    [Display(Name = "Enable Staging")]
+    public bool StagingEnabled { get; set; } = false;
 
     [Display(Name = "Enable Branta")]
     public bool BrantaEnabled { get; set; } = false;
 
-    public static string GetBrantaServerUrl(ServerEnvironment environment = ServerEnvironment.Production)
+    [Display(Name = "Show Checkout Info on Verification Page")]
+    public bool PostDescriptionEnabled { get; set; } = false;
+
+    [Display(Name = "Allow Guardrail verification for")]
+    public int TTL { get; set; } = (int)TTLOptions.ThirtyMinutes;
+
+    public string GetAPIKey()
+    {
+        return StagingEnabled ? StagingApiKey : ProductionApiKey;
+    }
+
+    public string GetBrantaServerUrl()
+    {
+        return GetBrantaServerUrl(StagingEnabled ? ServerEnvironment.Staging : ServerEnvironment.Production);
+    }
+
+    public static string GetBrantaServerUrl(ServerEnvironment environment)
     {
         if (Debugger.IsAttached)
         {
