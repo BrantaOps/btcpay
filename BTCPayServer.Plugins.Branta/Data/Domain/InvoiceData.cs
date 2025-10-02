@@ -31,7 +31,7 @@ public class InvoiceData
 
     public string GetVerifyLink()
     {
-        if (ExpirationDate <= DateTime.UtcNow || Status != Enums.InvoiceDataStatus.Success)
+        if (ExpirationDate <= DateTime.UtcNow || Status != InvoiceDataStatus.Success)
         {
             return null;
         }
