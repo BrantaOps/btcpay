@@ -32,7 +32,7 @@ public class BrantaSettings
     [Display(Name = "Allow Guardrail verification for")]
     public int TTL { get; set; } = (int)TTLOptions.ThirtyMinutes;
 
-    [Display(Name = "Show Verify Link on Checkout Page")]
+    [Display(Name = "Show Verify Link at Checkout")]
     public bool ShowVerifyLink { get; set; } = true;
 
     public string GetAPIKey()
