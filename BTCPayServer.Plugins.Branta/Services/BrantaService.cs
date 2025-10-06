@@ -22,10 +22,12 @@ public class BrantaService(
     {
         try
         {
-            var brantaInvoice = await invoiceService.GetAsync(checkoutModel.InvoiceId) ??
-                await CreateInvoiceAsync(checkoutModel);
+            var brantaSettings = await brantaSettingsService.GetAsync(checkoutModel.StoreId);
 
-            return brantaInvoice?.GetVerifyLink();
+            var brantaInvoice = await invoiceService.GetAsync(checkoutModel.InvoiceId) ??
+                await CreateInvoiceAsync(checkoutModel, brantaSettings);
+
+            return brantaSettings.ShowVerifyLink ? brantaInvoice?.GetVerifyLink() : null;
         }
         catch (Exception ex)
         {
@@ -34,13 +36,11 @@ public class BrantaService(
         }
     }
 
-    private async Task<InvoiceData> CreateInvoiceAsync(CheckoutModel checkoutModel)
+    private async Task<InvoiceData> CreateInvoiceAsync(CheckoutModel checkoutModel, Models.BrantaSettings brantaSettings)
     {
         var sw = Stopwatch.StartNew();
 
         var btcPayInvoice = await invoiceRepository.GetInvoice(checkoutModel.InvoiceId);
-
-        var brantaSettings = await brantaSettingsService.GetAsync(btcPayInvoice.StoreId);
 
         var now = DateTime.UtcNow;
 
