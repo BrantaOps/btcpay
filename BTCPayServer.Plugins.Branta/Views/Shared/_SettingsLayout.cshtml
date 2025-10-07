@@ -20,8 +20,8 @@
     }
 </style>
 
-<div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
-    <div class="mt-1" style="width: 350px">
+<div class="d-flex flex-column flex-fill">
+    <div class="mt-1 mb-2" style="width: 350px">
         @Html.Partial("Branta/_Logo")
     </div>
 
@@ -32,7 +32,7 @@
         </div>
     </nav>
 
-    <div style="flex: 1;">
+    <div class="flex-fill">
         @RenderBody()
     </div>
 
