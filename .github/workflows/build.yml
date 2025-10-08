@@ -1,10 +1,8 @@
-name: Build & Package on Release Branch (Linux)
+name: Build & Test
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   build-and-package:
@@ -21,29 +19,18 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Publish .NET project
-        run: dotnet publish BTCPayServer.Plugins.Branta/BTCPayServer.Plugins.Branta.csproj -c Release -o ./publish
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      
+      - name: Run tests with coverage
+        run: dotnet test --no-build --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/ /p:Include="[BTCPayServer.Plugins.Branta]*" /p:ExcludeByFile=\"**/Migrations/**,**/Views/**\" /p:Threshold=50 /p:ThresholdType=line /p:ThresholdStat=total
 
-      - run: |
-          cd publish
-          zip -r ../BTCPayServer.Plugins.Branta.zip .
-
-      - name: Set short SHA from PR head
-        if: github.event_name == 'pull_request'
-        run: echo "SHORT_SHA=${GITHUB_HEAD_REF}" && echo "SHORT_SHA=$(echo ${GITHUB_EVENT_PULL_REQUEST_HEAD_SHA} | cut -c1-8)" >> $GITHUB_ENV
-        env:
-          GITHUB_EVENT_PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set short SHA from push commit
-        if: github.event_name != 'pull_request'
-        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
-
-      - name: Rename .zip to .btcpay with commit SHA
-        run: |
-          mv BTCPayServer.Plugins.Branta.zip BTCPayServer.Plugins.Branta.btcpay
-
-      - name: Upload .btcpay file as artifact
+      - name: Generate coverage report
+        run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;MarkdownSummaryGithub"
+      
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: ${{ format('branta-btcpay-{0}', env.SHORT_SHA) }}
-          path: BTCPayServer.Plugins.Branta.btcpay
+          name: coverage-report
+          path: coverage-report/
