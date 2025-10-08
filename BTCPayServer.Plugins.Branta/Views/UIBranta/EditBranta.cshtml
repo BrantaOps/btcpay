@@ -171,6 +171,11 @@ else
                     <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(ServerEnvironment.Staging)/session/new" target="_blank">Staging Dashboard</a> to create an API Key.</p>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label asp-for="Settings.ShowVerifyLink" class="form-label" style="padding-right: 10px;"></label>
+                <input asp-for="Settings.ShowVerifyLink" type="checkbox" class="btcpay-toggle" />
+            </div>
         </div>
 
         <button name="command" type="submit" class="btn btn-primary mt-3" value="BrantaSaveSettings">
