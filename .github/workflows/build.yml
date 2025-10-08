@@ -19,6 +19,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Restore BTCPayServer dependencies
+        run: dotnet restore btcpayserver/BTCPayServer/BTCPayServer.csproj
+
+      - name: Restore plugin dependencies
+        run: dotnet restore BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj
+
       - name: Build BTCPayServer
         run: dotnet build btcpayserver/BTCPayServer/BTCPayServer.csproj --configuration Debug --no-restore
 
