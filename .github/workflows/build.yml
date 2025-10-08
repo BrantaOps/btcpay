@@ -20,7 +20,18 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Run tests with coverage
-        run: dotnet test --no-build --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/ /p:Include="[BTCPayServer.Plugins.Branta]*" /p:ExcludeByFile=\"**/Migrations/**,**/Views/**\" /p:Threshold=50 /p:ThresholdType=line /p:ThresholdStat=total
+        run: |
+          dotnet test BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj \
+            --no-build \
+            --configuration Release \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=./coverage/ \
+            /p:Include="[BTCPayServer.Plugins.Branta]*" \
+            /p:ExcludeByFile=\"**/Migrations/**,**/Views/**\" \
+            /p:Threshold=50 \
+            /p:ThresholdType=line \
+            /p:ThresholdStat=total
 
       - name: Generate coverage report
         run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;MarkdownSummaryGithub"
