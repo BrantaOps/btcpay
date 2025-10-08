@@ -5,7 +5,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  build-and-package:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,8 +24,8 @@ jobs:
           dotnet restore btcpayserver/BTCPayServer/BTCPayServer.csproj
           dotnet restore BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj
 
-      - name: Build BTCPayServer
-        run: dotnet build btcpayserver/BTCPayServer/BTCPayServer.csproj --configuration Debug --no-restore
+      - name: Build BTCPayServer with static assets
+        run: dotnet build btcpayserver/BTCPayServer/BTCPayServer.csproj --configuration Debug --no-restore /p:GenerateStaticWebAssetsManifest=true
 
       - name: Run tests with coverage
         run: dotnet test BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj --configuration Debug /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/ /p:Include="[BTCPayServer.Plugins.Branta]*" /p:ExcludeByFile=\"**/Migrations/**,**/Views/**\" /p:Threshold=50 /p:ThresholdType=line /p:ThresholdStat=total
