@@ -22,7 +22,6 @@ jobs:
       - name: Run tests with coverage
         run: |
           dotnet test BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj \
-            --no-build \
             --configuration Release \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
