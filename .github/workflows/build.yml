@@ -1,13 +1,11 @@
-name: Build & Package on Release Branch (Linux)
+name: Build & Test
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
-  build-and-package:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,29 +19,26 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Publish .NET project
-        run: dotnet publish BTCPayServer.Plugins.Branta/BTCPayServer.Plugins.Branta.csproj -c Release -o ./publish
-
-      - run: |
-          cd publish
-          zip -r ../BTCPayServer.Plugins.Branta.zip .
-
-      - name: Set short SHA from PR head
-        if: github.event_name == 'pull_request'
-        run: echo "SHORT_SHA=${GITHUB_HEAD_REF}" && echo "SHORT_SHA=$(echo ${GITHUB_EVENT_PULL_REQUEST_HEAD_SHA} | cut -c1-8)" >> $GITHUB_ENV
-        env:
-          GITHUB_EVENT_PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set short SHA from push commit
-        if: github.event_name != 'pull_request'
-        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
-
-      - name: Rename .zip to .btcpay with commit SHA
+      - name: Restore all dependencies
         run: |
-          mv BTCPayServer.Plugins.Branta.zip BTCPayServer.Plugins.Branta.btcpay
+          dotnet restore btcpayserver/BTCPayServer/BTCPayServer.csproj
+          dotnet restore BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj
 
-      - name: Upload .btcpay file as artifact
+      - name: Build BTCPayServer with static assets
+        run: dotnet build btcpayserver/BTCPayServer/BTCPayServer.csproj --configuration Debug --no-restore /p:GenerateStaticWebAssetsManifest=true
+
+      - name: Run tests with coverage
+        run: dotnet test BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj --configuration Debug /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/ /p:Include="[BTCPayServer.Plugins.Branta]*" /p:ExcludeByFile=\"**/Migrations/**,**/Views/**\" /p:Threshold=50 /p:ThresholdType=line /p:ThresholdStat=total
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate coverage report
+        run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;MarkdownSummaryGithub"
+      
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: ${{ format('branta-btcpay-{0}', env.SHORT_SHA) }}
-          path: BTCPayServer.Plugins.Branta.btcpay
+          name: coverage-report
+          path: coverage-report/

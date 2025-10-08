@@ -14,7 +14,7 @@ namespace BTCPayServer.Plugins.Branta.Services;
 public class BrantaService(
     ILogger<BrantaService> logger,
     IInvoiceService invoiceService,
-    InvoiceRepository invoiceRepository,
+    IInvoiceRepository invoiceRepository,
     IBrantaSettingsService brantaSettingsService,
     BrantaClient brantaClient) : IBrantaService
 {
