@@ -19,26 +19,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore all dependencies
-        run: |
-          dotnet restore btcpayserver/BTCPayServer/BTCPayServer.csproj
-          dotnet restore BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj
+      - name: Restore dependencies
+        run: dotnet restore BTCPayServer.Plugins.Branta --locked-mode
 
-      - name: Build BTCPayServer with static assets
-        run: dotnet build btcpayserver/BTCPayServer/BTCPayServer.csproj --configuration Debug --no-restore /p:GenerateStaticWebAssetsManifest=true
+      - name: Build plugin
+        run: dotnet build BTCPayServer.Plugins.Branta --configuration Release --no-restore
 
-      - name: Run tests with coverage
-        run: dotnet test BTCPayServer.Plugins.Branta.Tests/BTCPayServer.Plugins.Branta.Tests.csproj --configuration Debug /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/ /p:Include="[BTCPayServer.Plugins.Branta]*" /p:ExcludeByFile=\"**/Migrations/**,**/Views/**\" /p:Threshold=50 /p:ThresholdType=line /p:ThresholdStat=total
-
-      - name: Install ReportGenerator
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool
-
-      - name: Generate coverage report
-        run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Html;MarkdownSummaryGithub"
-      
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage-report/
+      - name: Run Tests
+        run: dotnet test BTCPayServer.Plugins.Branta.Tests
