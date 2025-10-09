@@ -1,5 +1,4 @@
-﻿using BTCPayServer.Plugins.Branta.Enums;
-using BTCPayServer.Plugins.Branta.Models;
+﻿using BTCPayServer.Plugins.Branta.Models;
 using System;
 using System.Threading.Tasks;
 using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
