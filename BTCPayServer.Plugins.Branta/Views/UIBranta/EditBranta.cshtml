@@ -114,7 +114,7 @@ else
         <div class="form-group">
             <label asp-for="Settings.ProductionApiKey" class="form-label"></label>
             <div class="input-container">
-                <input id="ProductionApiKey" type="password" asp-for="Settings.ProductionApiKey" value="@Model.Settings.ProductionApiKey" class="form-control" />
+                <input id="ProductionApiKey" type="password" asp-for="Settings.ProductionApiKey" value="@Model.Settings.ProductionApiKey" class="form-control" autocomplete="off" />
                 <div class="toggle-show-secret" data-target="#ProductionApiKey">
                     <span id="ProductionApiKeyIconShow"><vc:icon symbol="actions-show" /></span>
                     <span id="ProductionApiKeyIconHide" style="display: none"><vc:icon symbol="actions-hide" /></span>
@@ -161,7 +161,7 @@ else
                 <div>
                     <label asp-for="Settings.StagingApiKey" class="form-label"></label>
                     <div class="input-container">
-                        <input id="StagingApiKey" type="password" asp-for="Settings.StagingApiKey" value="@Model.Settings.StagingApiKey" class="form-control" />
+                        <input id="StagingApiKey" type="password" asp-for="Settings.StagingApiKey" value="@Model.Settings.StagingApiKey" class="form-control" autocomplete="off" />
                         <div class="toggle-show-secret" data-target="#StagingApiKey">
                             <span id="StagingApiKeyIconShow"><vc:icon symbol="actions-show" /></span>
                             <span id="StagingApiKeyIconHide" style="display: none"><vc:icon symbol="actions-hide" /></span>
