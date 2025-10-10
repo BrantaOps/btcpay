@@ -1,13 +1,11 @@
-name: Build & Package on Release Branch (Linux)
+name: Build & Test
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
-  build-and-package:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,29 +19,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Publish .NET project
-        run: dotnet publish BTCPayServer.Plugins.Branta/BTCPayServer.Plugins.Branta.csproj -c Release -o ./publish
+      - name: Restore dependencies
+        run: dotnet restore BTCPayServer.Plugins.Branta --locked-mode
 
-      - run: |
-          cd publish
-          zip -r ../BTCPayServer.Plugins.Branta.zip .
+      - name: Build plugin
+        run: dotnet build BTCPayServer.Plugins.Branta --no-restore
 
-      - name: Set short SHA from PR head
-        if: github.event_name == 'pull_request'
-        run: echo "SHORT_SHA=${GITHUB_HEAD_REF}" && echo "SHORT_SHA=$(echo ${GITHUB_EVENT_PULL_REQUEST_HEAD_SHA} | cut -c1-8)" >> $GITHUB_ENV
-        env:
-          GITHUB_EVENT_PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set short SHA from push commit
-        if: github.event_name != 'pull_request'
-        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
-
-      - name: Rename .zip to .btcpay with commit SHA
-        run: |
-          mv BTCPayServer.Plugins.Branta.zip BTCPayServer.Plugins.Branta.btcpay
-
-      - name: Upload .btcpay file as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ format('branta-btcpay-{0}', env.SHORT_SHA) }}
-          path: BTCPayServer.Plugins.Branta.btcpay
+      - name: Run Tests
+        run: dotnet test BTCPayServer.Plugins.Branta.Tests
