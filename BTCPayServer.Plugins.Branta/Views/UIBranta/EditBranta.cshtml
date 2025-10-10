@@ -53,6 +53,13 @@
         .info > .icon-info:hover {
             color: var(--btcpay-neutral-500) !important;
         }
+
+        .hide-text {
+            -webkit-text-security: disc;
+            -moz-text-security: disc;
+            text-security: disc;
+            font-size: 1.2rem;
+        }
     </style>
 }
 
@@ -62,8 +69,8 @@
             e.preventDefault();
             var targetId = $(this).data('target');
             var targetInput = $(targetId);
-            var show = targetInput.attr('type') == 'password';
-            targetInput.attr('type', show ? 'text' : 'password');
+            var show = targetInput.hasClass('hide-text');
+            targetInput.toggleClass('hide-text', !show);
 
             $(targetId + 'IconShow').css('display', show ? 'none' : 'block');
             $(targetId + 'IconHide').css('display', show ? 'block' : 'none');
@@ -114,7 +121,7 @@ else
         <div class="form-group">
             <label asp-for="Settings.ProductionApiKey" class="form-label"></label>
             <div class="input-container">
-                <input id="ProductionApiKey" type="password" asp-for="Settings.ProductionApiKey" value="@Model.Settings.ProductionApiKey" class="form-control" />
+                <input id="ProductionApiKey" type="text" asp-for="Settings.ProductionApiKey" value="@Model.Settings.ProductionApiKey" class="form-control hide-text" />
                 <div class="toggle-show-secret" data-target="#ProductionApiKey">
                     <span id="ProductionApiKeyIconShow"><vc:icon symbol="actions-show" /></span>
                     <span id="ProductionApiKeyIconHide" style="display: none"><vc:icon symbol="actions-hide" /></span>
@@ -161,7 +168,7 @@ else
                 <div>
                     <label asp-for="Settings.StagingApiKey" class="form-label"></label>
                     <div class="input-container">
-                        <input id="StagingApiKey" type="password" asp-for="Settings.StagingApiKey" value="@Model.Settings.StagingApiKey" class="form-control" />
+                        <input id="StagingApiKey" type="text" asp-for="Settings.StagingApiKey" value="@Model.Settings.StagingApiKey" class="form-control hide-text" />
                         <div class="toggle-show-secret" data-target="#StagingApiKey">
                             <span id="StagingApiKeyIconShow"><vc:icon symbol="actions-show" /></span>
                             <span id="StagingApiKeyIconHide" style="display: none"><vc:icon symbol="actions-hide" /></span>

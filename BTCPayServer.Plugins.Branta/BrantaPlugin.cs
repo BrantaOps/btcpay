@@ -29,6 +29,7 @@ public class BrantaPlugin : BaseBTCPayServerPlugin
         services.AddScoped<IBrantaService, BrantaService>();
         services.AddScoped<IBrantaSettingsService, BrantaSettingsService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<IInvoiceRepository, InvoiceRepositoryAdapter>();
         services.AddHttpClient();
         services.AddScoped<BrantaClient>();
         services.AddScheduledTask<CleanUpInvoiceService>(TimeSpan.FromHours(24));
