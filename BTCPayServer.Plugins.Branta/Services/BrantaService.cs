@@ -7,8 +7,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
 
@@ -64,7 +62,7 @@ public class BrantaService(
         Models.BrantaSettings settings,
         string btcPayInvoiceId)
     {
-        if (!settings.EnableZeroKnowledge || checkoutModel.InvoiceBitcoinUrlQR.Contains("branta_url"))
+        if (!settings.EnableZeroKnowledge)
         {
             return;
         }
@@ -110,7 +108,7 @@ public class BrantaService(
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
             .Select(pp => pp.Destination)
-            .Select(d => brantaSettings.EnableZeroKnowledge ? Encrypt(d, secret.ToString()) : d)
+            .Select(d => brantaSettings.EnableZeroKnowledge ? Helper.Encrypt(d, secret.ToString()) : d)
             .ToList();
 
         var invoiceData = new InvoiceData()
@@ -184,34 +182,4 @@ public class BrantaService(
         return $"Order {orderId}{descPart}";
     }
 
-    private static string Encrypt(string value, string secret)
-    {
-        byte[] keyData;
-        using (var sha256 = SHA256.Create())
-        {
-            keyData = sha256.ComputeHash(Encoding.UTF8.GetBytes(secret));
-        }
-
-        byte[] iv = new byte[12];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(iv);
-        }
-
-        byte[] plaintext = Encoding.UTF8.GetBytes(value);
-        byte[] ciphertext = new byte[plaintext.Length];
-        byte[] tag = new byte[16];
-
-        using (AesGcm aesGcm = new(keyData, 16))
-        {
-            aesGcm.Encrypt(iv, plaintext, ciphertext, tag);
-        }
-
-        byte[] result = new byte[iv.Length + ciphertext.Length + tag.Length];
-        Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
-        Buffer.BlockCopy(ciphertext, 0, result, iv.Length, ciphertext.Length);
-        Buffer.BlockCopy(tag, 0, result, iv.Length + ciphertext.Length, tag.Length);
-
-        return Convert.ToBase64String(result);
-    }
 }

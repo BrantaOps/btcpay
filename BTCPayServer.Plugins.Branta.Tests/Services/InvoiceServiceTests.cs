@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BTCPayServer.Plugins.Branta.Tests.Services;
 
-public class InvoiceServiceTests
+public class InvoiceServiceTests : IDisposable
 {
     private readonly BrantaDbContext _context;
     private readonly InvoiceService _invoiceService;

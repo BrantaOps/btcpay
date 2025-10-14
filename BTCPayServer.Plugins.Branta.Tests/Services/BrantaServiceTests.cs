@@ -6,6 +6,7 @@ using BTCPayServer.Plugins.Branta.Enums;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Plugins.Branta.Models;
 using BTCPayServer.Plugins.Branta.Services;
+using BTCPayServer.Plugins.Branta.Tests.Classes;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -82,7 +83,7 @@ public class BrantaServiceTests
         var invoice = CreateInvoice();
         var checkoutModel = CreateCheckoutModel(invoice);
 
-        var brantaSettings = GetSettings(invoice.StoreId, enabled: false);
+        SetSettings(invoice.StoreId, enabled: false);
 
         var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
@@ -107,7 +108,7 @@ public class BrantaServiceTests
         var invoice = CreateInvoice();
         var checkoutModel = CreateCheckoutModel(invoice);
 
-        var brantaSettings = GetSettings(invoice.StoreId, productionApiKey: null);
+        SetSettings(invoice.StoreId, productionApiKey: null);
 
         var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
@@ -130,11 +131,38 @@ public class BrantaServiceTests
         var invoice = CreateInvoice();
         var checkoutModel = CreateCheckoutModel(invoice);
 
-        var brantaSettings = GetSettings(invoice.StoreId);
+        SetSettings(invoice.StoreId);
 
         var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.Contains(OnChainAddress, result);
+        _invoiceServiceMock.Verify(
+            x => x.AddAsync(It.IsAny<InvoiceData>()),
+            Times.Once
+        );
+
+        var resultInvoiceData = GetSavedInvoiceData();
+
+        Assert.NotNull(resultInvoiceData);
+        Assert.Null(resultInvoiceData.FailureReason);
+        Assert.Equal(InvoiceDataStatus.Success, resultInvoiceData.Status);
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_CreatesZeroKnowledgeInvoice()
+    {
+        var invoice = CreateInvoice();
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId, enableZeroKnowledge: true);
+
+        var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        var secret = TestHelper.GetSecret(result);
+        var value = TestHelper.GetValueFromZeroKnowledgeUrl(result);
+        var decryptedValue = TestHelper.Decrypt(value, secret);
+        Assert.Equal(OnChainAddress, decryptedValue);
+
         _invoiceServiceMock.Verify(
             x => x.AddAsync(It.IsAny<InvoiceData>()),
             Times.Once
@@ -155,20 +183,23 @@ public class BrantaServiceTests
             .Arguments[0] as InvoiceData ?? throw new NullReferenceException();
     }
 
-    private BrantaSettings GetSettings(string storeId, bool enabled = true, string? productionApiKey = ValidApiKey)
+    private void SetSettings(
+        string storeId,
+        bool enabled = true,
+        string? productionApiKey = ValidApiKey,
+        bool enableZeroKnowledge = false)
     {
         var brantaSettings = new BrantaSettings()
         {
             BrantaEnabled = enabled,
             ProductionApiKey = productionApiKey,
-            PostDescriptionEnabled = true
+            PostDescriptionEnabled = true,
+            EnableZeroKnowledge = enableZeroKnowledge
         };
-        
+
         _brantaSettingsServiceMock
             .Setup(x => x.GetAsync(storeId))
             .ReturnsAsync(brantaSettings);
-
-        return brantaSettings;
     }
 
     private InvoiceEntity CreateInvoice()
@@ -205,6 +236,7 @@ public class BrantaServiceTests
         {
             StoreId = invoice.StoreId,
             InvoiceId = invoice.Id,
+            InvoiceBitcoinUrlQR = $"bitcoin:{OnChainAddress}"
         };
     }
 }
