@@ -140,6 +140,14 @@ else
 
         <div id="advanced-settings" class="advanced-settings-details collapse">
             <div class="form-group">
+                <label asp-for="Settings.EnableZeroKnowledge" class="form-label" style="padding-right: 10px;"></label>
+                <input asp-for="Settings.EnableZeroKnowledge" type="checkbox" class="btcpay-toggle" />
+                <span class="info" title="Branta will never know the addresses posted.">
+                    <vc:icon symbol="info" />
+                </span>
+            </div>
+
+            <div class="form-group">
                 <label asp-for="Settings.PostDescriptionEnabled" class="form-label" style="padding-right: 10px;"></label>
                 <input asp-for="Settings.PostDescriptionEnabled" type="checkbox" class="btcpay-toggle" />
                 <span class="info" title="This will show Order ID and Description to users verifying their payment. (Example: Order ID 123456 - foo bar)">

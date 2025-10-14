@@ -3,9 +3,12 @@ using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
 
@@ -22,12 +25,23 @@ public class BrantaService(
     {
         try
         {
+            var btcPayInvoice = await invoiceRepository.GetInvoice(checkoutModel.InvoiceId);
             var brantaSettings = await brantaSettingsService.GetAsync(checkoutModel.StoreId);
 
-            var brantaInvoice = await invoiceService.GetAsync(checkoutModel.InvoiceId) ??
-                await CreateInvoiceAsync(checkoutModel, brantaSettings);
+            var brantaInvoice = await GetOrCreateBrantaInvoiceAsync(
+                checkoutModel.InvoiceId,
+                btcPayInvoice,
+                brantaSettings
+            );
 
-            return brantaSettings.ShowVerifyLink ? brantaInvoice?.GetVerifyLink() : null;
+            await AddZeroKnowledgeParametersIfNeededAsync(
+                checkoutModel,
+                brantaInvoice,
+                brantaSettings,
+                btcPayInvoice.Id
+            );
+
+            return GetVerifyLinkIfEnabled(brantaInvoice, brantaSettings);
         }
         catch (Exception ex)
         {
@@ -35,28 +49,80 @@ public class BrantaService(
             return null;
         }
     }
+    private async Task<InvoiceData> GetOrCreateBrantaInvoiceAsync(
+        string invoiceId,
+        InvoiceEntity btcPayInvoice,
+        Models.BrantaSettings settings)
+    {
+        return await invoiceService.GetAsync(invoiceId)
+            ?? await CreateInvoiceAsync(btcPayInvoice, settings);
+    }
 
-    private async Task<InvoiceData> CreateInvoiceAsync(CheckoutModel checkoutModel, Models.BrantaSettings brantaSettings)
+    private async Task AddZeroKnowledgeParametersIfNeededAsync(
+        CheckoutModel checkoutModel,
+        InvoiceData brantaInvoice,
+        Models.BrantaSettings settings,
+        string btcPayInvoiceId)
+    {
+        if (!settings.EnableZeroKnowledge || checkoutModel.InvoiceBitcoinUrlQR.Contains("branta_url"))
+        {
+            return;
+        }
+
+        var payload = new JObject
+        {
+            ["branta_payment_id"] = brantaInvoice.PaymentId,
+            ["branta_zk_secret"] = brantaInvoice.ZeroKnowledgeSecret
+        };
+
+        var queryString = BuildQueryString(payload);
+        checkoutModel.InvoiceBitcoinUrlQR += $"&{queryString}";
+
+        await invoiceRepository.UpdateInvoiceMetadata(
+            btcPayInvoiceId,
+            checkoutModel.StoreId,
+            payload
+        );
+    }
+
+    private static string BuildQueryString(JObject payload)
+    {
+        return string.Join("&",
+            payload.Properties().Select(p => $"{p.Name}={p.Value}")
+        );
+    }
+
+    private static string GetVerifyLinkIfEnabled(
+        InvoiceData invoice,
+        Models.BrantaSettings settings)
+    {
+        return settings.ShowVerifyLink ? invoice?.GetVerifyLink() : null;
+    }
+
+    private async Task<InvoiceData> CreateInvoiceAsync(InvoiceEntity btcPayInvoice, Models.BrantaSettings brantaSettings)
     {
         var sw = Stopwatch.StartNew();
 
-        var btcPayInvoice = await invoiceRepository.GetInvoice(checkoutModel.InvoiceId);
-
         var now = DateTime.UtcNow;
 
+        var secret = brantaSettings.EnableZeroKnowledge ? Guid.NewGuid().ToString() : null;
         var payments = btcPayInvoice
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
             .Select(pp => pp.Destination)
+            .Select(d => brantaSettings.EnableZeroKnowledge ? Encrypt(d, secret.ToString()) : d)
             .ToList();
 
         var invoiceData = new InvoiceData()
         {
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
-            PaymentId = payments.First(),
+            PaymentId = payments
+                .OrderBy(p => p.Length)
+                .First(),
             Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
+            ZeroKnowledgeSecret = secret
         };
 
         if (!brantaSettings.BrantaEnabled)
@@ -82,7 +148,8 @@ public class BrantaService(
                     payment = payments.First(),
                     alt_payments = [.. payments.Skip(1)],
                     ttl = ttl.ToString(),
-                    btcPayServerPluginVersion = Helper.GetVersion()
+                    btcPayServerPluginVersion = Helper.GetVersion(),
+                    zk = brantaSettings.EnableZeroKnowledge
                 }
             };
 
@@ -115,5 +182,36 @@ public class BrantaService(
         var descPart = string.IsNullOrWhiteSpace(description) ? "" : $" - {description}";
 
         return $"Order {orderId}{descPart}";
+    }
+
+    private static string Encrypt(string value, string secret)
+    {
+        byte[] keyData;
+        using (var sha256 = SHA256.Create())
+        {
+            keyData = sha256.ComputeHash(Encoding.UTF8.GetBytes(secret));
+        }
+
+        byte[] iv = new byte[12];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(iv);
+        }
+
+        byte[] plaintext = Encoding.UTF8.GetBytes(value);
+        byte[] ciphertext = new byte[plaintext.Length];
+        byte[] tag = new byte[16];
+
+        using (AesGcm aesGcm = new(keyData, 16))
+        {
+            aesGcm.Encrypt(iv, plaintext, ciphertext, tag);
+        }
+
+        byte[] result = new byte[iv.Length + ciphertext.Length + tag.Length];
+        Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
+        Buffer.BlockCopy(ciphertext, 0, result, iv.Length, ciphertext.Length);
+        Buffer.BlockCopy(tag, 0, result, iv.Length + ciphertext.Length, tag.Length);
+
+        return Convert.ToBase64String(result);
     }
 }

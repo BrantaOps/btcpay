@@ -35,6 +35,9 @@ public class BrantaSettings
     [Display(Name = "Show Verify Link at Checkout")]
     public bool ShowVerifyLink { get; set; } = true;
 
+    [Display(Name = "Enable Zero-Knowledge")]
+    public bool EnableZeroKnowledge { get; set; } = false;
+
     public string GetAPIKey()
     {
         return StagingEnabled ? StagingApiKey : ProductionApiKey;

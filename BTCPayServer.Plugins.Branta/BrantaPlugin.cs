@@ -1,5 +1,6 @@
 using BTCPayServer.Abstractions.Contracts;
 using BTCPayServer.Abstractions.Models;
+using BTCPayServer.Payments;
 using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Plugins.Branta.Services;
@@ -12,7 +13,7 @@ public class BrantaPlugin : BaseBTCPayServerPlugin
 {
     public override IBTCPayServerPlugin.PluginDependency[] Dependencies { get; } =
     {
-        new IBTCPayServerPlugin.PluginDependency { Identifier = nameof(BTCPayServer), Condition = ">=2.0.0" }
+        new IBTCPayServerPlugin.PluginDependency { Identifier = nameof(BTCPayServer), Condition = ">=2.0.4" }
     };
 
     public override void Execute(IServiceCollection services)
@@ -33,6 +34,8 @@ public class BrantaPlugin : BaseBTCPayServerPlugin
         services.AddHttpClient();
         services.AddScoped<BrantaClient>();
         services.AddScheduledTask<CleanUpInvoiceService>(TimeSpan.FromHours(24));
+
+        services.AddScoped<IGlobalCheckoutModelExtension, BrantaCheckoutModelExtension>();
 
         services.AddUIExtension("checkout-payment-method", "Branta/VerifyWithBranta");
     }
