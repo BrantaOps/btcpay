@@ -160,6 +160,7 @@ public class BrantaServiceTests
 
         var secret = TestHelper.GetSecret(result);
         var value = TestHelper.GetValueFromZeroKnowledgeUrl(result);
+        Assert.NotNull(value);
         var decryptedValue = TestHelper.Decrypt(value, secret);
         Assert.Equal(OnChainAddress, decryptedValue);
 

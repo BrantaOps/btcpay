@@ -45,7 +45,7 @@ public class TestHelper
         return new Uri(url).Fragment.TrimStart('#').Substring("secret=".Length);
     }
 
-    public static string GetValueFromZeroKnowledgeUrl(string url)
+    public static string? GetValueFromZeroKnowledgeUrl(string url)
     {
         var match = Regex.Match(new Uri(url).AbsolutePath, @"/zk-verify/(.+)$");
 
