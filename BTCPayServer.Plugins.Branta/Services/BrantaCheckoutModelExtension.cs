@@ -1,4 +1,5 @@
 ﻿using BTCPayServer.Payments;
+using BTCPayServer.Plugins.Branta.Classes;
 
 namespace BTCPayServer.Plugins.Branta.Services;
 
@@ -6,14 +7,9 @@ public class BrantaCheckoutModelExtension : IGlobalCheckoutModelExtension
 {
     public void ModifyCheckoutModel(CheckoutModelContext context)
     {
-        var paymentId = context.InvoiceEntity.Metadata.GetAdditionalData<string>("branta_payment_id");
-        var secret = context.InvoiceEntity.Metadata.GetAdditionalData<string>("branta_zk_secret");
+        var paymentId = context.InvoiceEntity.Metadata.GetAdditionalData<string>(Constants.PaymentId);
+        var secret = context.InvoiceEntity.Metadata.GetAdditionalData<string>(Constants.ZeroKnowledgeSecret);
 
-        if (paymentId != null && secret != null)
-        {
-            context.Model.InvoiceBitcoinUrlQR +=
-                (context.Model.InvoiceBitcoinUrlQR.Contains('?') ? "&" : "?") +
-                $"branta_payment_id={paymentId}&branta_zk_secret={secret}";
-        }
+        context.Model.SetZeroKnowledgeParams(paymentId, secret);
     }
 }

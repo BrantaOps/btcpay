@@ -1,4 +1,5 @@
 ﻿using BTCPayServer.Models.InvoicingModels;
+using BTCPayServer.Payments;
 using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Services.Invoices;
@@ -62,31 +63,25 @@ public class BrantaService(
         Models.BrantaSettings settings,
         string btcPayInvoiceId)
     {
-        if (!settings.EnableZeroKnowledge)
+        if (!settings.EnableZeroKnowledge ||
+            brantaInvoice.Status != Enums.InvoiceDataStatus.Success ||
+            checkoutModel.InvoiceBitcoinUrlQR.Contains(Constants.PaymentId))
         {
             return;
         }
 
         var payload = new JObject
         {
-            ["branta_payment_id"] = brantaInvoice.PaymentId,
-            ["branta_zk_secret"] = brantaInvoice.ZeroKnowledgeSecret
+            [Constants.PaymentId] = brantaInvoice.PaymentId,
+            [Constants.ZeroKnowledgeSecret] = brantaInvoice.ZeroKnowledgeSecret
         };
 
-        var queryString = BuildQueryString(payload);
-        checkoutModel.InvoiceBitcoinUrlQR += $"&{queryString}";
+        checkoutModel.SetZeroKnowledgeParams(brantaInvoice.PaymentId, brantaInvoice.ZeroKnowledgeSecret);
 
         await invoiceRepository.UpdateInvoiceMetadata(
             btcPayInvoiceId,
             checkoutModel.StoreId,
             payload
-        );
-    }
-
-    private static string BuildQueryString(JObject payload)
-    {
-        return string.Join("&",
-            payload.Properties().Select(p => $"{p.Name}={p.Value}")
         );
     }
 
@@ -103,10 +98,23 @@ public class BrantaService(
 
         var now = DateTime.UtcNow;
 
+        var chainBtcId = PaymentTypes.CHAIN.GetPaymentMethodId("BTC");
+        var lnBtcId = PaymentTypes.LN.GetPaymentMethodId("BTC");
+
         var secret = brantaSettings.EnableZeroKnowledge ? Guid.NewGuid().ToString() : null;
         var payments = btcPayInvoice
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
+            .OrderBy(pp =>
+            {
+                if (pp.PaymentMethodId == chainBtcId) return 0;
+                if (pp.PaymentMethodId == lnBtcId) return 1;
+
+                if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true ||
+                    pp.PaymentMethodId?.ToString().Contains("LNURL") == true) return 2;
+
+                return 3;
+            })
             .Select(pp => pp.Destination)
             .Select(d => brantaSettings.EnableZeroKnowledge ? Helper.Encrypt(d, secret.ToString()) : d)
             .ToList();

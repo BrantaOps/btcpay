@@ -27,6 +27,7 @@ public class BrantaServiceTests
 
     private const string ValidApiKey = "valid-api-key-123";
     private const string OnChainAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+    private const string LightningAddress = "lnbc15u1p3xnhl2pp5jptserfk3zk4qy42tlucycrfwxhydvlemu9pqr93tuzlv9cc7g3sdqsvfhkcap3xyhx7un8cqzpgxqzjcsp5f8c52y2stc300gl6s4xswtjpc37hrnnr3c9wvtgjfuvqmpm35evq9qyyssqy4lgd8tj637qcjp05rdpxxykjenthxftej7a2zzmwrmrl70fyj9hvj0rewhzj7jfyuwkwcg9g2jpwtk3wkjtwnkdks84hsnu8xps5vsq4gj5hs";
 
     public BrantaServiceTests()
     {
@@ -176,6 +177,34 @@ public class BrantaServiceTests
         Assert.Equal(InvoiceDataStatus.Success, resultInvoiceData.Status);
     }
 
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_ProperlyAddsQueryParamsForLightningOnly()
+    {
+        var invoice = CreateInvoice("BTC-Lightning");
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId, enableZeroKnowledge: true);
+
+        await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        Assert.Contains("?branta_payment_id", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.Contains("&branta_zk_secret", checkoutModel.InvoiceBitcoinUrlQR);
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_ShouldNotSetZeroKnowledgeIfRequestUnsuccessful()
+    {
+        var invoice = CreateInvoice();
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId, enableZeroKnowledge: true, productionApiKey: "invalid-api-key");
+
+        await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        Assert.DoesNotContain("branta_payment_id", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.DoesNotContain("&branta_zk_secret", checkoutModel.InvoiceBitcoinUrlQR);
+    }
+
 
     private InvoiceData GetSavedInvoiceData()
     {
@@ -203,7 +232,7 @@ public class BrantaServiceTests
             .ReturnsAsync(brantaSettings);
     }
 
-    private InvoiceEntity CreateInvoice()
+    private InvoiceEntity CreateInvoice(string paymentMethodId = "BTC")
     {
         var invoice = new InvoiceEntity()
         {
@@ -216,10 +245,10 @@ public class BrantaServiceTests
             }
         };
 
-        var btcPaymentMethodId = PaymentMethodId.Parse("BTC");
+        var btcPaymentMethodId = PaymentMethodId.Parse(paymentMethodId);
         invoice.SetPaymentPrompt(btcPaymentMethodId, new PaymentPrompt()
         {
-            Destination = OnChainAddress,
+            Destination = paymentMethodId.Contains("Lightning") ? LightningAddress : OnChainAddress,
             PaymentMethodId = btcPaymentMethodId,
             Currency = "BTC"
         });

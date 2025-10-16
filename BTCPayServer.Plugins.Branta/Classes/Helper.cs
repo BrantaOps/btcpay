@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BTCPayServer.Models.InvoicingModels;
+using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -9,6 +10,18 @@ public static class Helper
     public static string GetVersion()
     {
         return typeof(BrantaPlugin).Assembly.GetName().Version?.ToString();
+    }
+
+    public static void SetZeroKnowledgeParams(this CheckoutModel model, string payment, string secret)
+    {
+        if (payment == null || secret == null)
+        {
+            return;
+        }
+
+        model.InvoiceBitcoinUrlQR +=
+            (model.InvoiceBitcoinUrlQR.Contains('?') ? "&" : "?") +
+            $"{Constants.PaymentId}={payment}&{Constants.ZeroKnowledgeSecret}={secret}";
     }
 
     public static string Encrypt(string value, string secret)
