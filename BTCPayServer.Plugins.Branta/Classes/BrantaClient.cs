@@ -48,4 +48,5 @@ public class Payment
     public string[] alt_payments { get; set; }
     public string ttl { get; set; }
     public string btcPayServerPluginVersion { get; set; }
+    public bool zk { get; set; }
 }
