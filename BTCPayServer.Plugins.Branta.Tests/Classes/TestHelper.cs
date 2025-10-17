@@ -18,15 +18,12 @@ public class TestHelper
 
         byte[] fullData = Convert.FromBase64String(encryptedValue);
 
-        // Extract the IV from the beginning (first 12 bytes)
         byte[] iv = new byte[12];
         Buffer.BlockCopy(fullData, 0, iv, 0, 12);
 
-        // Extract the tag from the end (last 16 bytes)
         byte[] tag = new byte[16];
         Buffer.BlockCopy(fullData, fullData.Length - 16, tag, 0, 16);
 
-        // Extract the ciphertext (everything in between)
         byte[] ciphertext = new byte[fullData.Length - 12 - 16];
         Buffer.BlockCopy(fullData, 12, ciphertext, 0, ciphertext.Length);
 

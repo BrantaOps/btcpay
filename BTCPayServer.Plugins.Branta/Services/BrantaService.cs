@@ -189,5 +189,4 @@ public class BrantaService(
 
         return $"Order {orderId}{descPart}";
     }
-
 }
