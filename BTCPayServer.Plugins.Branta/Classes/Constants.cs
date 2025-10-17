@@ -2,6 +2,6 @@
 
 public class Constants
 {
-    public const string PaymentId = "branta_payment_id";
-    public const string ZeroKnowledgeSecret = "branta_zk_secret";
+    public const string PaymentId = "branta_id";
+    public const string ZeroKnowledgeSecret = "branta_secret";
 }

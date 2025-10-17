@@ -187,8 +187,8 @@ public class BrantaServiceTests
 
         await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
-        Assert.Contains("?branta_payment_id", checkoutModel.InvoiceBitcoinUrlQR);
-        Assert.Contains("&branta_zk_secret", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.Contains("?branta_id", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.Contains("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);
     }
 
     [Fact]
@@ -201,8 +201,8 @@ public class BrantaServiceTests
 
         await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
-        Assert.DoesNotContain("branta_payment_id", checkoutModel.InvoiceBitcoinUrlQR);
-        Assert.DoesNotContain("&branta_zk_secret", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.DoesNotContain("branta_id", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.DoesNotContain("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);
     }
 
 
