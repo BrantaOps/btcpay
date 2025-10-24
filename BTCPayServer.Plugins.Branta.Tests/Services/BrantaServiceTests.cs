@@ -178,7 +178,7 @@ public class BrantaServiceTests
     }
 
     [Fact]
-    public async Task CreateInvoiceIfNotExists_ProperlyAddsQueryParamsForLightningOnly()
+    public async Task CreateInvoiceIfNotExists_DoesNotAddZeroParamsLightningOnly()
     {
         var invoice = CreateInvoice("BTC-Lightning");
         var checkoutModel = CreateCheckoutModel(invoice);
@@ -187,8 +187,8 @@ public class BrantaServiceTests
 
         await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
-        Assert.Contains("?branta_id", checkoutModel.InvoiceBitcoinUrlQR);
-        Assert.Contains("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.DoesNotContain("?branta_id", checkoutModel.InvoiceBitcoinUrlQR);
+        Assert.DoesNotContain("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);
     }
 
     [Fact]
