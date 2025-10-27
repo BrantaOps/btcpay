@@ -1,6 +1,8 @@
 ﻿using BTCPayServer.Plugins.Branta.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -10,11 +12,17 @@ namespace BTCPayServer.Plugins.Branta.Classes;
 
 public class BrantaClient(IHttpClientFactory httpClientFactory)
 {
-    public static readonly string PaymentVersion = "v1";
+    public static readonly string PaymentVersion = "v2";
+
+    private JsonSerializerSettings _jsonSettings = new()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     public async Task PostPaymentAsync(PaymentRequest paymentRequest, BrantaSettings brantaSettings)
     {
-        var json = JsonConvert.SerializeObject(paymentRequest);
+
+        var json = JsonConvert.SerializeObject(paymentRequest, _jsonSettings);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{PaymentVersion}/payments")
@@ -38,15 +46,18 @@ public class BrantaClient(IHttpClientFactory httpClientFactory)
 
 public class PaymentRequest
 {
-    public Payment payment { get; set; }
+    public List<Destination> Destinations { get; set; }
+
+    public string Description { get; set; }
+
+    public string Ttl { get; set; }
+
+    public string BtcPayServerPluginVersion { get; set; }
 }
 
-public class Payment
+public class Destination
 {
-    public string description { get; set; }
-    public string payment { get; set; }
-    public string[] alt_payments { get; set; }
-    public string ttl { get; set; }
-    public string btcPayServerPluginVersion { get; set; }
-    public bool zk { get; set; }
+    public string Value { get; set; }
+
+    public bool Zk { get; set; }
 }

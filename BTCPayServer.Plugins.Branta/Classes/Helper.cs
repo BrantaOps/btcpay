@@ -14,7 +14,7 @@ public static class Helper
 
     public static void SetZeroKnowledgeParams(this CheckoutModel model, string payment, string secret)
     {
-        if (payment == null || secret == null)
+        if (payment == null || secret == null || model.PaymentMethodId != "BTC-CHAIN")
         {
             return;
         }

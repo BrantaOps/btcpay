@@ -115,8 +115,16 @@ public class BrantaService(
 
                 return 3;
             })
-            .Select(pp => pp.Destination)
-            .Select(d => brantaSettings.EnableZeroKnowledge ? Helper.Encrypt(d, secret.ToString()) : d)
+            .Select(pp =>
+            {
+                var isZk = brantaSettings.EnableZeroKnowledge && pp.PaymentMethodId == PaymentMethodId.TryParse("BTC");
+
+                return new Destination()
+                {
+                    Value = isZk ? Helper.Encrypt(pp.Destination, secret.ToString()) : pp.Destination,
+                    Zk = isZk
+                };
+            })
             .ToList();
 
         var invoiceData = new InvoiceData()
@@ -124,8 +132,9 @@ public class BrantaService(
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
             PaymentId = payments
-                .OrderBy(p => p.Length)
-                .First(),
+                .OrderBy(p => p.Value.Length)
+                .First()
+                .Value,
             Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
             ZeroKnowledgeSecret = secret
@@ -148,15 +157,10 @@ public class BrantaService(
 
             var paymentRequest = new Classes.PaymentRequest()
             {
-                payment = new Payment
-                {
-                    description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
-                    payment = payments.First(),
-                    alt_payments = [.. payments.Skip(1)],
-                    ttl = ttl.ToString(),
-                    btcPayServerPluginVersion = Helper.GetVersion(),
-                    zk = brantaSettings.EnableZeroKnowledge
-                }
+                Destinations = payments,
+                Description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
+                Ttl = ttl.ToString(),
+                BtcPayServerPluginVersion = Helper.GetVersion()
             };
 
             await brantaClient.PostPaymentAsync(paymentRequest, brantaSettings);
