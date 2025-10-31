@@ -2,7 +2,7 @@ name: Build & Test
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, release/**]
 
 jobs:
   build-and-test:
@@ -19,11 +19,14 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Clean
+        run: dotnet clean BTCPayServer.Plugins.Branta
+
       - name: Restore dependencies
         run: dotnet restore BTCPayServer.Plugins.Branta --locked-mode
 
       - name: Build plugin
-        run: dotnet build BTCPayServer.Plugins.Branta --no-restore
+        run: dotnet build BTCPayServer.Plugins.Branta --no-restore -m:1
 
       - name: Run Tests
-        run: dotnet test BTCPayServer.Plugins.Branta.Tests
+        run: dotnet test BTCPayServer.Plugins.Branta.Tests -m:1

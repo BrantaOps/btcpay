@@ -140,6 +140,14 @@ else
 
         <div id="advanced-settings" class="advanced-settings-details collapse">
             <div class="form-group">
+                <label asp-for="Settings.EnableZeroKnowledge" class="form-label" style="padding-right: 10px;"></label>
+                <input asp-for="Settings.EnableZeroKnowledge" type="checkbox" class="btcpay-toggle" />
+                <span class="info" title="Encrypt on-chain addresses before sending to Branta.">
+                    <vc:icon symbol="info" />
+                </span>
+            </div>
+
+            <div class="form-group">
                 <label asp-for="Settings.PostDescriptionEnabled" class="form-label" style="padding-right: 10px;"></label>
                 <input asp-for="Settings.PostDescriptionEnabled" type="checkbox" class="btcpay-toggle" />
                 <span class="info" title="This will show Order ID and Description to users verifying their payment. (Example: Order ID 123456 - foo bar)">
@@ -149,7 +157,7 @@ else
 
             <div class="form-group">
                 <label asp-for="Settings.TTL" class="form-label"></label>
-                <span class="info" title="Represents how long after BTCPay Server Invoice expiration should the payment be deleted from guardrail.">
+                <span class="info" title="Represents how long after BTCPay Server Invoice expiration should the payment be deleted from Branta.">
                     <vc:icon symbol="info" />
                 </span>
                 <div class="input-group">
@@ -161,7 +169,7 @@ else
                 <div class="mb-2">
                     <label asp-for="Settings.StagingEnabled" class="form-label" style="padding-right: 10px;"></label>
                     <input asp-for="Settings.StagingEnabled" type="checkbox" class="btcpay-toggle" />
-                    <span class="info" title="Request will be made to the Staging environment instead of Production.">
+                    <span class="info" title="Request will be made to Staging environment instead of Production.">
                         <vc:icon symbol="info" />
                     </span>
                 </div>

@@ -29,11 +29,14 @@ public class BrantaSettings
     [Display(Name = "Show Checkout Info on Verification Page")]
     public bool PostDescriptionEnabled { get; set; } = false;
 
-    [Display(Name = "Allow Guardrail verification for")]
+    [Display(Name = "Allow Guardrail Verification for")]
     public int TTL { get; set; } = (int)TTLOptions.ThirtyMinutes;
 
     [Display(Name = "Show Verify Link at Checkout")]
     public bool ShowVerifyLink { get; set; } = true;
+
+    [Display(Name = "Enable Zero-Knowledge")]
+    public bool EnableZeroKnowledge { get; set; } = false;
 
     public string GetAPIKey()
     {

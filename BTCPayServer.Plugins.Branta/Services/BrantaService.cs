@@ -1,8 +1,10 @@
 ﻿using BTCPayServer.Models.InvoicingModels;
+using BTCPayServer.Payments;
 using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -22,12 +24,23 @@ public class BrantaService(
     {
         try
         {
+            var btcPayInvoice = await invoiceRepository.GetInvoice(checkoutModel.InvoiceId);
             var brantaSettings = await brantaSettingsService.GetAsync(checkoutModel.StoreId);
 
-            var brantaInvoice = await invoiceService.GetAsync(checkoutModel.InvoiceId) ??
-                await CreateInvoiceAsync(checkoutModel, brantaSettings);
+            var brantaInvoice = await GetOrCreateBrantaInvoiceAsync(
+                checkoutModel.InvoiceId,
+                btcPayInvoice,
+                brantaSettings
+            );
 
-            return brantaSettings.ShowVerifyLink ? brantaInvoice?.GetVerifyLink() : null;
+            await AddZeroKnowledgeParametersIfNeededAsync(
+                checkoutModel,
+                brantaInvoice,
+                brantaSettings,
+                btcPayInvoice.Id
+            );
+
+            return GetVerifyLinkIfEnabled(brantaInvoice, brantaSettings);
         }
         catch (Exception ex)
         {
@@ -35,28 +48,96 @@ public class BrantaService(
             return null;
         }
     }
+    private async Task<InvoiceData> GetOrCreateBrantaInvoiceAsync(
+        string invoiceId,
+        InvoiceEntity btcPayInvoice,
+        Models.BrantaSettings settings)
+    {
+        return await invoiceService.GetAsync(invoiceId)
+            ?? await CreateInvoiceAsync(btcPayInvoice, settings);
+    }
 
-    private async Task<InvoiceData> CreateInvoiceAsync(CheckoutModel checkoutModel, Models.BrantaSettings brantaSettings)
+    private async Task AddZeroKnowledgeParametersIfNeededAsync(
+        CheckoutModel checkoutModel,
+        InvoiceData brantaInvoice,
+        Models.BrantaSettings settings,
+        string btcPayInvoiceId)
+    {
+        if (!settings.EnableZeroKnowledge ||
+            brantaInvoice.Status != Enums.InvoiceDataStatus.Success ||
+            checkoutModel.InvoiceBitcoinUrlQR.Contains(Constants.PaymentId))
+        {
+            return;
+        }
+
+        var payload = new JObject
+        {
+            [Constants.PaymentId] = brantaInvoice.PaymentId,
+            [Constants.ZeroKnowledgeSecret] = brantaInvoice.ZeroKnowledgeSecret
+        };
+
+        checkoutModel.SetZeroKnowledgeParams(brantaInvoice.PaymentId, brantaInvoice.ZeroKnowledgeSecret);
+
+        await invoiceRepository.UpdateInvoiceMetadata(
+            btcPayInvoiceId,
+            checkoutModel.StoreId,
+            payload
+        );
+    }
+
+    private static string GetVerifyLinkIfEnabled(
+        InvoiceData invoice,
+        Models.BrantaSettings settings)
+    {
+        return settings.ShowVerifyLink ? invoice?.GetVerifyLink() : null;
+    }
+
+    private async Task<InvoiceData> CreateInvoiceAsync(InvoiceEntity btcPayInvoice, Models.BrantaSettings brantaSettings)
     {
         var sw = Stopwatch.StartNew();
 
-        var btcPayInvoice = await invoiceRepository.GetInvoice(checkoutModel.InvoiceId);
-
         var now = DateTime.UtcNow;
 
+        var chainBtcId = PaymentTypes.CHAIN.GetPaymentMethodId("BTC");
+        var lnBtcId = PaymentTypes.LN.GetPaymentMethodId("BTC");
+
+        var secret = brantaSettings.EnableZeroKnowledge ? Guid.NewGuid().ToString() : null;
         var payments = btcPayInvoice
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
-            .Select(pp => pp.Destination)
+            .OrderBy(pp =>
+            {
+                if (pp.PaymentMethodId == chainBtcId) return 0;
+                if (pp.PaymentMethodId == lnBtcId) return 1;
+
+                if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true ||
+                    pp.PaymentMethodId?.ToString().Contains("LNURL") == true) return 2;
+
+                return 3;
+            })
+            .Select(pp =>
+            {
+                var isZk = brantaSettings.EnableZeroKnowledge && pp.PaymentMethodId == PaymentMethodId.TryParse("BTC");
+
+                return new Destination()
+                {
+                    Value = isZk ? Helper.Encrypt(pp.Destination, secret.ToString()) : pp.Destination,
+                    Zk = isZk
+                };
+            })
             .ToList();
 
         var invoiceData = new InvoiceData()
         {
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
-            PaymentId = payments.First(),
+            PaymentId = payments
+                .OrderBy(p => p.Value.Length)
+                .First()
+                .Value,
             Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
+            ZeroKnowledgeSecret = secret
         };
 
         if (!brantaSettings.BrantaEnabled)
@@ -76,14 +157,10 @@ public class BrantaService(
 
             var paymentRequest = new Classes.PaymentRequest()
             {
-                payment = new Payment
-                {
-                    description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
-                    payment = payments.First(),
-                    alt_payments = [.. payments.Skip(1)],
-                    ttl = ttl.ToString(),
-                    btcPayServerPluginVersion = Helper.GetVersion()
-                }
+                Destinations = payments,
+                Description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
+                Ttl = ttl.ToString(),
+                BtcPayServerPluginVersion = Helper.GetVersion()
             };
 
             await brantaClient.PostPaymentAsync(paymentRequest, brantaSettings);
