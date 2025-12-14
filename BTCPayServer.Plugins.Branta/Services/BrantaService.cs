@@ -137,7 +137,8 @@ public class BrantaService(
                 .Value,
             Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
-            ZeroKnowledgeSecret = secret
+            ZeroKnowledgeSecret = secret,
+            PluginVersion = Helper.GetVersion()
         };
 
         if (!brantaSettings.BrantaEnabled)

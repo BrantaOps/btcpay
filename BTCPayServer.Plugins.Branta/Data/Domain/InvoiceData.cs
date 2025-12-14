@@ -31,6 +31,8 @@ public class InvoiceData
 
     public string ZeroKnowledgeSecret { get; set; }
 
+    public string PluginVersion { get; set; }
+
     public string GetVerifyLink()
     {
         if (ExpirationDate <= DateTime.UtcNow || Status != InvoiceDataStatus.Success)
