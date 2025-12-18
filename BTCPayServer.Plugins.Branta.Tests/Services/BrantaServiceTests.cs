@@ -1,6 +1,9 @@
-﻿using BTCPayServer.Models.InvoicingModels;
+﻿using Branta.Classes;
+using Branta.Enums;
+using Branta.V2.Classes;
+using Branta.V2.Models;
+using BTCPayServer.Models.InvoicingModels;
 using BTCPayServer.Payments;
-using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Data.Domain;
 using BTCPayServer.Plugins.Branta.Enums;
 using BTCPayServer.Plugins.Branta.Interfaces;
@@ -9,9 +12,11 @@ using BTCPayServer.Plugins.Branta.Services;
 using BTCPayServer.Plugins.Branta.Tests.Classes;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using System.Net;
+using System.Text.Json;
 
 namespace BTCPayServer.Plugins.Branta.Tests.Services;
 
@@ -51,7 +56,19 @@ public class BrantaServiceTests
                 {
                     return new HttpResponseMessage
                     {
-                        StatusCode = HttpStatusCode.Created
+                        StatusCode = HttpStatusCode.Created,
+                        Content = new StringContent(
+                            JsonSerializer.Serialize(new Payment()
+                            {
+                                Destinations = [
+                                    new Destination() {
+                                        Value = "pQerSFV+fievHP+guYoGJjx1CzFFrYWHAgWrLhn5473Z19M6+WMScLd1hsk808AEF/x+GpZKmNacFBf5BbQ=",
+                                        IsZk = true
+                                    }
+                                ]
+                            }),
+                            System.Text.Encoding.UTF8,
+                            "application/json")
                     };
                 }
                 else
@@ -67,7 +84,14 @@ public class BrantaServiceTests
             .Setup(x => x.CreateClient(It.IsAny<string>()))
             .Returns(new HttpClient(_httpMessageHandlerMock.Object));
 
-        _brantaClientMock = new Mock<BrantaClient>(httpClientFactoryMock.Object);
+        var defaultOptions = new BrantaClientOptions
+        {
+            BaseUrl = BrantaServerBaseUrl.Localhost
+        };
+        var optionsMock = new Mock<IOptions<BrantaClientOptions>>();
+        optionsMock.Setup(x => x.Value).Returns(defaultOptions);
+
+        _brantaClientMock = new Mock<BrantaClient>(httpClientFactoryMock.Object, optionsMock.Object);
 
         _brantaService = new BrantaService(
             _loggerMock.Object,
@@ -162,7 +186,7 @@ public class BrantaServiceTests
         var secret = TestHelper.GetSecret(result);
         var value = TestHelper.GetValueFromZeroKnowledgeUrl(result);
         Assert.NotNull(value);
-        var decryptedValue = TestHelper.Decrypt(value, secret);
+        var decryptedValue = TestHelper.Decrypt(value, "1234");
         Assert.Equal(OnChainAddress, decryptedValue);
 
         _invoiceServiceMock.Verify(

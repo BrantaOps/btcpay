@@ -3,6 +3,7 @@
 @using BTCPayServer.Plugins.Branta.Enums
 @using BTCPayServer.Plugins.Branta.Models
 @using BTCPayServer.Plugins.Branta.Views
+@using Branta.Enums
 
 @model BTCPayServer.Plugins.Branta.Models.BrantaSettingsViewModel
 
@@ -123,7 +124,7 @@
                 </div>
             </div>
             <span asp-validation-for="Settings.ProductionApiKey" class="text-danger"></span>
-            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(ServerEnvironment.Production)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
+            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaServerBaseUrl.Production)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
         </div>
 
         <button class="accordion-button collapsed only-for-js ms-0 d-inline-block" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-settings" aria-expanded="false" aria-controls="advanced-settings">
@@ -178,7 +179,7 @@
                         </div>
                     </div>
                     <span asp-validation-for="Settings.StagingApiKey" class="text-danger"></span>
-                    <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(ServerEnvironment.Staging)/session/new" target="_blank">Staging Dashboard</a> to create an API Key.</p>
+                    <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaServerBaseUrl.Staging)/session/new" target="_blank">Staging Dashboard</a> to create an API Key.</p>
                 </div>
             </div>
 

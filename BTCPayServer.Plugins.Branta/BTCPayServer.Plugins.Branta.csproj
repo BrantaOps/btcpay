@@ -8,6 +8,7 @@
     <Product>Branta</Product>
     <Description>Easily verify payments, checkouts, and invoices.</Description>
     <Version>0.4.0</Version>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <!-- Plugin development properties -->
@@ -41,6 +42,11 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.10.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.10.0" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Branta" Version="0.0.4" />
   </ItemGroup>
 
   <!-- If you reference another project, by default, the dlls won't be copied in the published plugin, you need <Private>true</Private> -->
