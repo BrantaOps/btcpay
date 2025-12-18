@@ -46,7 +46,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Branta" Version="0.0.3" />
+    <PackageReference Include="Branta" Version="0.0.4" />
   </ItemGroup>
 
   <!-- If you reference another project, by default, the dlls won't be copied in the published plugin, you need <Private>true</Private> -->

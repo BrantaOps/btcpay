@@ -135,6 +135,7 @@ public class BrantaService(
                 .First()
                 .Value,
             Environment = brantaSettings.StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production,
+            StoreId = btcPayInvoice.StoreId,
             PluginVersion = Helper.GetVersion()
         };
 
@@ -169,8 +170,9 @@ public class BrantaService(
 
             if (brantaSettings.EnableZeroKnowledge == true)
             {
-                var (_, secret) = await brantaClient.AddZKPaymentAsync(paymentRequest, options);
+                var (result, secret) = await brantaClient.AddZKPaymentAsync(paymentRequest, options);
                 invoiceData.ZeroKnowledgeSecret = secret;
+                invoiceData.PaymentId = result.Destinations.FirstOrDefault()?.Value;
             }
             else
             {
