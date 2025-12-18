@@ -1,7 +1,7 @@
+using Branta.V2.Extensions;
 using BTCPayServer.Abstractions.Contracts;
 using BTCPayServer.Abstractions.Models;
 using BTCPayServer.Payments;
-using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
 using BTCPayServer.Plugins.Branta.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,12 +27,11 @@ public class BrantaPlugin : BaseBTCPayServerPlugin
             factory.ConfigureBuilder(o);
         });
 
+        services.ConfigureBrantaServices();
         services.AddScoped<IBrantaService, BrantaService>();
         services.AddScoped<IBrantaSettingsService, BrantaSettingsService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IInvoiceRepository, InvoiceRepositoryAdapter>();
-        services.AddHttpClient();
-        services.AddScoped<BrantaClient>();
         services.AddScheduledTask<CleanUpInvoiceService>(TimeSpan.FromHours(24));
 
         services.AddScoped<IGlobalCheckoutModelExtension, BrantaCheckoutModelExtension>();

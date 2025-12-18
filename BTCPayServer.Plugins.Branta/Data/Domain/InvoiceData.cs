@@ -1,4 +1,4 @@
-﻿using BTCPayServer.Plugins.Branta.Classes;
+﻿using Branta.Enums;
 using BTCPayServer.Plugins.Branta.Enums;
 using BTCPayServer.Plugins.Branta.Models;
 using System;
@@ -21,7 +21,7 @@ public class InvoiceData
 
     public int ProcessingTime { get; set; }
 
-    public ServerEnvironment Environment { get; set; }
+    public BrantaServerBaseUrl Environment { get; set; }
 
     public InvoiceDataStatus Status { get; set; }
 
@@ -43,6 +43,6 @@ public class InvoiceData
         var path = ZeroKnowledgeSecret != null ? "zk-verify" : "verify";
         var secret = ZeroKnowledgeSecret != null ? $"#secret={ZeroKnowledgeSecret}" : "";
 
-        return $"{baseUrl}/{BrantaClient.PaymentVersion}/{path}/{Uri.EscapeDataString(PaymentId)}{secret}";
+        return $"{baseUrl}/v2/{path}/{Uri.EscapeDataString(PaymentId)}{secret}";
     }
 }

@@ -1,4 +1,9 @@
-﻿using BTCPayServer.Models.InvoicingModels;
+﻿using Branta.Classes;
+using Branta.Enums;
+using Branta.Exceptions;
+using Branta.V2.Classes;
+using Branta.V2.Models;
+using BTCPayServer.Models.InvoicingModels;
 using BTCPayServer.Payments;
 using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Interfaces;
@@ -101,7 +106,6 @@ public class BrantaService(
         var chainBtcId = PaymentTypes.CHAIN.GetPaymentMethodId("BTC");
         var lnBtcId = PaymentTypes.LN.GetPaymentMethodId("BTC");
 
-        var secret = brantaSettings.EnableZeroKnowledge ? Guid.NewGuid().ToString() : null;
         var payments = btcPayInvoice
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
@@ -115,15 +119,10 @@ public class BrantaService(
 
                 return 3;
             })
-            .Select(pp =>
+            .Select(pp => new Destination
             {
-                var isZk = brantaSettings.EnableZeroKnowledge && pp.PaymentMethodId == PaymentMethodId.TryParse("BTC");
-
-                return new Destination()
-                {
-                    Value = isZk ? Helper.Encrypt(pp.Destination, secret.ToString()) : pp.Destination,
-                    Zk = isZk
-                };
+                Value = pp.Destination,
+                IsZk = brantaSettings.EnableZeroKnowledge && pp.PaymentMethodId == PaymentMethodId.TryParse("BTC")
             })
             .ToList();
 
@@ -135,9 +134,8 @@ public class BrantaService(
                 .OrderBy(p => p.Value.Length)
                 .First()
                 .Value,
-            Environment = brantaSettings.StagingEnabled ? Enums.ServerEnvironment.Staging : Enums.ServerEnvironment.Production,
-            StoreId = btcPayInvoice.StoreId,
-            ZeroKnowledgeSecret = secret
+            Environment = brantaSettings.StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production,
+            StoreId = btcPayInvoice.StoreId
         };
 
         if (!brantaSettings.BrantaEnabled)
@@ -152,18 +150,32 @@ public class BrantaService(
 
         try
         {
-            var ttl = (btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
+            var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
             invoiceData.ExpirationDate = now.AddSeconds(ttl);
 
-            var paymentRequest = new Classes.PaymentRequest()
+            var paymentRequest = new Payment()
             {
                 Destinations = payments,
                 Description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
-                Ttl = ttl.ToString(),
+                TTL = ttl,
                 BtcPayServerPluginVersion = Helper.GetVersion()
             };
 
-            await brantaClient.PostPaymentAsync(paymentRequest, brantaSettings);
+            var options = new BrantaClientOptions()
+            {
+                BaseUrl = brantaSettings.GetBrantaServerUrl(),
+                DefaultApiKey = brantaSettings.GetAPIKey()
+            };
+
+            if (brantaSettings.EnableZeroKnowledge == true)
+            {
+                var (_, secret) = await brantaClient.AddZKPaymentAsync(paymentRequest, options);
+                invoiceData.ZeroKnowledgeSecret = secret;
+            }
+            else
+            {
+                await brantaClient.AddPaymentAsync(paymentRequest, options);
+            }
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;
         }
