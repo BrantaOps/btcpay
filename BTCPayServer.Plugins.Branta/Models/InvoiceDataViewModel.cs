@@ -19,6 +19,7 @@ public class InvoiceDto : InvoiceData
         Status = invoice.Status;
         FailureReason = invoice.FailureReason;
         ExpirationDate = invoice.ExpirationDate;
+        PluginVersion = invoice.PluginVersion;
         VerifyLink = invoice.GetVerifyLink();
     }
 }

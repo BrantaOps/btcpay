@@ -30,6 +30,7 @@
             <th>Status</th>
             <th>Failure Reason</th>
             <th>Verify Link</th>
+            <th>Plugin Version</th>
             <th>Processing Time (ms)</th>
         </tr>
     </thead>
@@ -58,6 +59,7 @@
                         <span>Expired</span>
                     }
                 </td>
+                <td>@invoice.PluginVersion</td>
                 <td>@(invoice.ProcessingTime > 0 ? invoice.ProcessingTime : "")</td>
             </tr>
         }

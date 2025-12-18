@@ -135,7 +135,7 @@ public class BrantaService(
                 .First()
                 .Value,
             Environment = brantaSettings.StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production,
-            StoreId = btcPayInvoice.StoreId
+            PluginVersion = Helper.GetVersion()
         };
 
         if (!brantaSettings.BrantaEnabled)
