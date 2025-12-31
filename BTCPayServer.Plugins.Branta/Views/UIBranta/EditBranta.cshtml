@@ -3,7 +3,12 @@
 @using BTCPayServer.Plugins.Branta.Enums
 @using BTCPayServer.Plugins.Branta.Models
 @using BTCPayServer.Plugins.Branta.Views
+@using Branta.Classes
 @using Branta.Enums
+@using Branta.V2.Classes
+@using System.Diagnostics
+
+@inject BrantaClient BrantaClient
 
 @model BTCPayServer.Plugins.Branta.Models.BrantaSettingsViewModel
 
@@ -11,6 +16,20 @@
     Layout = "~/Views/Shared/_SettingsLayout.cshtml";
     ViewData["BrantaSettingsActiveTab"] = "EditBranta";
     ViewData.SetActivePage(BrantaNavPages.Index, "Branta - Settings");
+
+    var productionApiKeyValid = !string.IsNullOrEmpty(Model.Settings.ProductionApiKey) ? await BrantaClient.IsApiKeyValidAsync(new BrantaClientOptions()
+    {
+        BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Production,
+        DefaultApiKey = Model.Settings.ProductionApiKey
+    }) : true;
+
+    var stagingApiKeyValid = !string.IsNullOrEmpty(Model.Settings.StagingApiKey) ? await BrantaClient.IsApiKeyValidAsync(new BrantaClientOptions()
+    {
+        BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Staging,
+        DefaultApiKey = Model.Settings.StagingApiKey
+    }) : true;
+
+    var advancedSettingsError = !stagingApiKeyValid;
 }
 
 @section PageHeadContent {
@@ -115,7 +134,15 @@
         </div>
 
         <div class="form-group">
-            <label asp-for="Settings.ProductionApiKey" class="form-label"></label>
+            <div style="display: flex; flex-direction: row; align-items: start; gap: 10px;">
+                <label asp-for="Settings.ProductionApiKey" class="form-label"></label>
+                @if (!productionApiKeyValid)
+                {
+                    <span class="text-danger">
+                        <vc:icon symbol="warning" /> <span>API Key is invalid</span>
+                    </span>
+                }
+            </div>
             <div class="input-container">
                 <input id="ProductionApiKey" type="text" asp-for="Settings.ProductionApiKey" value="@Model.Settings.ProductionApiKey" class="form-control hide-text" />
                 <div class="toggle-show-secret" data-target="#ProductionApiKey">
@@ -127,12 +154,20 @@
             <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaServerBaseUrl.Production)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
         </div>
 
-        <button class="accordion-button collapsed only-for-js ms-0 d-inline-block" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-settings" aria-expanded="false" aria-controls="advanced-settings">
-            <div class="advanced-settings">
-                <div>Advanced Settings</div>
-                <vc:icon symbol="caret-down" />
-            </div>
-        </button>
+        <div style="display: flex; flex-direction: row; align-items: center;">
+            @if (advancedSettingsError)
+            {
+                <span class="text-danger" style="margin-bottom: 3px;">
+                    <vc:icon symbol="warning" />
+                </span>
+            }
+            <button class="accordion-button collapsed only-for-js ms-0 d-inline-block" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-settings" aria-expanded="false" aria-controls="advanced-settings">
+                <div class="advanced-settings">
+                    <div>Advanced Settings</div>
+                    <vc:icon symbol="caret-down" />
+                </div>
+            </button>
+        </div>
 
         <div id="advanced-settings" class="advanced-settings-details collapse">
             <div class="form-group">
@@ -171,6 +206,12 @@
                 </div>
                 <div>
                     <label asp-for="Settings.StagingApiKey" class="form-label"></label>
+                    @if (!stagingApiKeyValid)
+                    {
+                        <span class="text-danger">
+                            <vc:icon symbol="warning" /> <span>API Key is invalid</span>
+                        </span>
+                    }
                     <div class="input-container">
                         <input id="StagingApiKey" type="text" asp-for="Settings.StagingApiKey" value="@Model.Settings.StagingApiKey" class="form-control hide-text" />
                         <div class="toggle-show-secret" data-target="#StagingApiKey">
