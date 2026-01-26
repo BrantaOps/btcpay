@@ -11,6 +11,7 @@ using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -75,11 +76,13 @@ public class BrantaService(
             return;
         }
 
-        var payload = new JObject
-        {
-            [Constants.PaymentId] = brantaInvoice.PaymentId,
-            [Constants.ZeroKnowledgeSecret] = brantaInvoice.ZeroKnowledgeSecret
-        };
+        var existingInvoice = await invoiceRepository.GetInvoice(btcPayInvoiceId);
+        var additionalData = existingInvoice?.Metadata?.AdditionalData
+            ?? new Dictionary<string, JToken>();
+
+        var payload = JObject.FromObject(additionalData);
+        payload[Constants.PaymentId] = brantaInvoice.PaymentId;
+        payload[Constants.ZeroKnowledgeSecret] = brantaInvoice.ZeroKnowledgeSecret;
 
         checkoutModel.SetZeroKnowledgeParams(brantaInvoice.PaymentId, brantaInvoice.ZeroKnowledgeSecret);
 
