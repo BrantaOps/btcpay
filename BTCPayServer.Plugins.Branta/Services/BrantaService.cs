@@ -97,7 +97,7 @@ public class BrantaService(
         InvoiceData invoice,
         Models.BrantaSettings settings)
     {
-        return settings.ShowVerifyLink ? invoice?.GetVerifyLink() : null;
+        return settings.ShowVerifyLink ? invoice?.GetVerifyLink(settings) : null;
     }
 
     private async Task<InvoiceData> CreateInvoiceAsync(InvoiceEntity btcPayInvoice, Models.BrantaSettings brantaSettings)

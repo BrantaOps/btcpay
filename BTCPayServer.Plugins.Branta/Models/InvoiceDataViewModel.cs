@@ -7,7 +7,7 @@ public class InvoiceDto : InvoiceData
 {
     public string VerifyLink { get; set; }
 
-    public InvoiceDto(InvoiceData invoice)
+    public InvoiceDto(InvoiceData invoice, BrantaSettings brantaSettings)
     {
         Id = invoice.Id;
         InvoiceId = invoice.InvoiceId;
@@ -20,7 +20,7 @@ public class InvoiceDto : InvoiceData
         FailureReason = invoice.FailureReason;
         ExpirationDate = invoice.ExpirationDate;
         PluginVersion = invoice.PluginVersion;
-        VerifyLink = invoice.GetVerifyLink();
+        VerifyLink = invoice.GetVerifyLink(brantaSettings);
     }
 }
 

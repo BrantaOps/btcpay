@@ -39,6 +39,9 @@ public class BrantaSettings
     [Display(Name = "Enable Zero-Knowledge")]
     public bool EnableZeroKnowledge { get; set; } = false;
 
+    [Display(Name = "Opt-in to V3 Verification (Beta)")]
+    public bool EnableV3Verify { get; set; } = false;
+
     public string GetAPIKey()
     {
         return StagingEnabled ? StagingApiKey : ProductionApiKey;

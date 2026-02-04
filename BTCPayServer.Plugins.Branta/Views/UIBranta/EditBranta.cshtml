@@ -231,6 +231,14 @@
                     <vc:icon symbol="info" />
                 </span>
             </div>
+
+            <div class="form-group">
+                <label asp-for="Settings.EnableV3Verify" class="form-label" style="padding-right: 10px;"></label>
+                <input asp-for="Settings.EnableV3Verify" type="checkbox" class="btcpay-toggle" />
+                <span class="info" title="Links users the v3 verification page (instead of v2) on checkout.">
+                    <vc:icon symbol="info" />
+                </span>
+            </div>
         </div>
 
         <button name="command" type="submit" class="btn btn-primary mt-3" value="BrantaSaveSettings">

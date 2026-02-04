@@ -1,6 +1,9 @@
 ﻿using BTCPayServer.Plugins.Branta.Data.Domain;
+using BTCPayServer.Plugins.Branta.Interfaces;
+using BTCPayServer.Plugins.Branta.Models;
 using BTCPayServer.Plugins.Branta.Services;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace BTCPayServer.Plugins.Branta.Tests.Services;
 
@@ -8,15 +11,23 @@ public class InvoiceServiceTests : IDisposable
 {
     private readonly BrantaDbContext _context;
     private readonly InvoiceService _invoiceService;
+    private readonly Mock<IBrantaSettingsService> _brantaSettingsServiceMock;
 
     public InvoiceServiceTests()
     {
+        _brantaSettingsServiceMock = new Mock<IBrantaSettingsService>();
+        var brantaSettings = new BrantaSettings();
+
+        _brantaSettingsServiceMock
+            .Setup(x => x.GetAsync("store1"))
+            .ReturnsAsync(brantaSettings);
+
         var options = new DbContextOptionsBuilder<BrantaDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
         _context = new BrantaDbContext(options);
-        _invoiceService = new InvoiceService(_context);
+        _invoiceService = new InvoiceService(_context, _brantaSettingsServiceMock.Object);
     }
 
     public void Dispose()

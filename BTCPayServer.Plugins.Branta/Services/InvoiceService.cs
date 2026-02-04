@@ -8,10 +8,12 @@ using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
 
 namespace BTCPayServer.Plugins.Branta.Services;
 
-public class InvoiceService(BrantaDbContext context) : IInvoiceService
+public class InvoiceService(BrantaDbContext context, IBrantaSettingsService brantaSettingsService) : IInvoiceService
 {
     public async Task<InvoiceDataViewModel> GetAsync(string storeId, int pageSize, int page)
     {
+        var brantaSettings = await brantaSettingsService.GetAsync(storeId);
+
         if (page < 1) page = 1;
 
         var query = context.Invoice
@@ -25,7 +27,7 @@ public class InvoiceService(BrantaDbContext context) : IInvoiceService
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync())
-            .Select(i => new InvoiceDto(i))
+            .Select(i => new InvoiceDto(i, brantaSettings))
             .ToList();
 
         return new InvoiceDataViewModel
