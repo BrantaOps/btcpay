@@ -37,7 +37,7 @@ public class BrantaSettings
     public bool ShowVerifyLink { get; set; } = true;
 
     [Display(Name = "Enable Zero-Knowledge")]
-    public bool EnableZeroKnowledge { get; set; } = false;
+    public bool EnableZeroKnowledge { get; set; } = true;
 
     public string GetAPIKey()
     {
