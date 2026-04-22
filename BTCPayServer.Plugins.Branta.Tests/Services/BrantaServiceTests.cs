@@ -34,6 +34,11 @@ public class BrantaServiceTests
     private const string OnChainAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
     private const string LightningAddress = "lnbc15u1p3xnhl2pp5jptserfk3zk4qy42tlucycrfwxhydvlemu9pqr93tuzlv9cc7g3sdqsvfhkcap3xyhx7un8cqzpgxqzjcsp5f8c52y2stc300gl6s4xswtjpc37hrnnr3c9wvtgjfuvqmpm35evq9qyyssqy4lgd8tj637qcjp05rdpxxykjenthxftej7a2zzmwrmrl70fyj9hvj0rewhzj7jfyuwkwcg9g2jpwtk3wkjtwnkdks84hsnu8xps5vsq4gj5hs";
 
+    private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+
     public BrantaServiceTests()
     {
         _loggerMock = new Mock<ILogger<BrantaService>>();
@@ -66,7 +71,8 @@ public class BrantaServiceTests
                                         IsZk = true
                                     }
                                 ]
-                            }),
+                            },
+                            _serializerOptions),
                             System.Text.Encoding.UTF8,
                             "application/json")
                     };
