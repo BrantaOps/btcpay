@@ -86,7 +86,8 @@ public class BrantaServiceTests
 
         var defaultOptions = new BrantaClientOptions
         {
-            BaseUrl = BrantaServerBaseUrl.Localhost
+            BaseUrl = BrantaServerBaseUrl.Localhost,
+            Privacy = PrivacyMode.Loose
         };
         var optionsMock = new Mock<IOptions<BrantaClientOptions>>();
         optionsMock.Setup(x => x.Value).Returns(defaultOptions);
