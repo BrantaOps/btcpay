@@ -168,7 +168,8 @@ public class BrantaService(
             var options = new BrantaClientOptions()
             {
                 BaseUrl = brantaSettings.GetBrantaServerUrl(),
-                DefaultApiKey = brantaSettings.GetAPIKey()
+                DefaultApiKey = brantaSettings.GetAPIKey(),
+                Privacy = PrivacyMode.Loose
             };
 
             if (brantaSettings.EnableZeroKnowledge == true)
