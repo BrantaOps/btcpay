@@ -62,11 +62,11 @@
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+  <ItemGroup Condition="'$(Configuration)' == 'Release' OR !Exists('..\..\..\branta-dotnet\Branta\Branta.csproj')">
     <PackageReference Include="Branta" Version="2.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Release' OR !Exists('..\..\..\branta-dotnet\Branta\Branta.csproj')">
+  <ItemGroup>
     <ProjectReference Include="..\btcpayserver\BTCPayServer\BTCPayServer.csproj" />
   </ItemGroup>
 </Project>
