@@ -20,13 +20,15 @@
     var productionApiKeyValid = !string.IsNullOrEmpty(Model.Settings.ProductionApiKey) ? await BrantaClient.IsApiKeyValidAsync(new BrantaClientOptions()
     {
         BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Production,
-        DefaultApiKey = Model.Settings.ProductionApiKey
+        DefaultApiKey = Model.Settings.ProductionApiKey,
+        Privacy = PrivacyMode.Loose
     }) : true;
 
     var stagingApiKeyValid = !string.IsNullOrEmpty(Model.Settings.StagingApiKey) ? await BrantaClient.IsApiKeyValidAsync(new BrantaClientOptions()
     {
         BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Staging,
-        DefaultApiKey = Model.Settings.StagingApiKey
+        DefaultApiKey = Model.Settings.StagingApiKey,
+        Privacy = PrivacyMode.Loose
     }) : true;
 
     var advancedSettingsError = !stagingApiKeyValid;
