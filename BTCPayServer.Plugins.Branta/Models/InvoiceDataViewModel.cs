@@ -20,7 +20,7 @@ public class InvoiceDto : InvoiceData
         FailureReason = invoice.FailureReason;
         ExpirationDate = invoice.ExpirationDate;
         PluginVersion = invoice.PluginVersion;
-        VerifyLink = invoice.GetVerifyLink();
+        VerifyLink = invoice.VerifyUrl;
     }
 }
 

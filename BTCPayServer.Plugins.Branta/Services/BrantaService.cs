@@ -46,7 +46,7 @@ public class BrantaService(
                 btcPayInvoice.Id
             );
 
-            return GetVerifyLinkIfEnabled(brantaInvoice, brantaSettings);
+            return brantaSettings.ShowVerifyLink ? brantaInvoice?.VerifyUrl : null;
         }
         catch (Exception ex)
         {
@@ -93,13 +93,6 @@ public class BrantaService(
         );
     }
 
-    private static string GetVerifyLinkIfEnabled(
-        InvoiceData invoice,
-        Models.BrantaSettings settings)
-    {
-        return settings.ShowVerifyLink ? invoice?.GetVerifyLink() : null;
-    }
-
     private async Task<InvoiceData> CreateInvoiceAsync(InvoiceEntity btcPayInvoice, Models.BrantaSettings brantaSettings)
     {
         var sw = Stopwatch.StartNew();
@@ -122,10 +115,15 @@ public class BrantaService(
 
                 return 3;
             })
-            .Select(pp => new Destination
+            .Select(pp =>
             {
-                Value = pp.Destination,
-                IsZk = brantaSettings.EnableZeroKnowledge && pp.PaymentMethodId == PaymentMethodId.TryParse("BTC")
+                var type = GetDestinationType(pp.PaymentMethodId, chainBtcId, lnBtcId);
+                return new Destination
+                {
+                    Value = pp.Destination,
+                    IsZk = brantaSettings.EnableZeroKnowledge && type.HasValue && ZkEligibleTypes.Contains(type.Value),
+                    Type = type
+                };
             })
             .ToList();
 
@@ -175,6 +173,7 @@ public class BrantaService(
             if (brantaSettings.EnableZeroKnowledge == true)
             {
                 var (result, secret) = await brantaClient.AddZKPaymentAsync(paymentRequest, options);
+                invoiceData.VerifyUrl = result.VerifyUrl;
                 invoiceData.ZeroKnowledgeSecret = secret;
                 invoiceData.PaymentId = result.Destinations.FirstOrDefault()?.Value;
             }
@@ -201,6 +200,26 @@ public class BrantaService(
         await invoiceService.AddAsync(invoiceData);
 
         return invoiceData;
+    }
+
+    private static readonly HashSet<DestinationType> ZkEligibleTypes =
+    [
+        DestinationType.BitcoinAddress,
+        DestinationType.Bolt11
+    ];
+
+    private static DestinationType? GetDestinationType(PaymentMethodId id, PaymentMethodId chainBtcId, PaymentMethodId lnBtcId)
+    {
+        if (id == chainBtcId)
+            return DestinationType.BitcoinAddress;
+
+        if (id == lnBtcId || id?.ToString().Contains("Lightning") == true)
+            return DestinationType.Bolt11;
+
+        if (id?.ToString().Contains("LNURL") == true)
+            return DestinationType.LnUrl;
+
+        return null;
     }
 
     private static string GetDescription(InvoiceEntity btcPayInvoice)

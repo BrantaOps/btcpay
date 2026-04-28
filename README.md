@@ -40,7 +40,7 @@ branta-btcpayserver # (root)
 ### Migrations
  * Set `Branta.Migrations` project as the Startup Project (not in source control)
  * Set `BTCPayServer.Plugins.Branta` as the Default Project
- * Run migration `Add-Migration -c BrantaDbContext "<Migration-Name-Here>"`
+ * Run migration `Add-Migration -c BrantaDbContext "<Migration-Name-Here>"` or `dotnet ef migrations add Migration-Name-Here -c BrantaDbContext --project BTCPayServer.Plugins.Branta --startup-project BTCPayServer.Plugins.Branta.Migrations`
 
 ### Install Plugin
 

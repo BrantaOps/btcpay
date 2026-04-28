@@ -33,6 +33,8 @@ public class InvoiceData
 
     public string PluginVersion { get; set; }
 
+    public string VerifyUrl { get; set; }
+
     public string GetVerifyLink()
     {
         if (ExpirationDate <= DateTime.UtcNow || Status != InvoiceDataStatus.Success)
@@ -40,11 +42,6 @@ public class InvoiceData
             return null;
         }
 
-        var baseUrl = BrantaSettings.GetBrantaServerUrl(Environment);
-
-        var path = ZeroKnowledgeSecret != null ? "zk-verify" : "verify";
-        var secret = ZeroKnowledgeSecret != null ? $"#secret={ZeroKnowledgeSecret}" : "";
-
-        return $"{baseUrl}/v2/{path}/{Uri.EscapeDataString(PaymentId)}{secret}";
+        return VerifyUrl;
     }
 }
