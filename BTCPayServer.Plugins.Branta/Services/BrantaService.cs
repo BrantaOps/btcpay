@@ -179,7 +179,8 @@ public class BrantaService(
             }
             else
             {
-                await brantaClient.AddPaymentAsync(paymentRequest, options);
+                var result = await brantaClient.AddPaymentAsync(paymentRequest, options);
+                invoiceData.VerifyUrl = result.VerifyUrl;
             }
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;
