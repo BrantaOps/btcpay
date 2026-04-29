@@ -44,7 +44,7 @@ public class TestHelper
 
     public static string? GetValueFromZeroKnowledgeUrl(string url)
     {
-        var match = Regex.Match(new Uri(url).AbsolutePath, @"/zk-verify/(.+)$");
+        var match = Regex.Match(new Uri(url).AbsolutePath, @"/verify/(.+)$");
 
         if (!match.Success)
             return null;

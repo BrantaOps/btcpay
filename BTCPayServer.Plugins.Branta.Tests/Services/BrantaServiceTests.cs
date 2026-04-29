@@ -67,8 +67,9 @@ public class BrantaServiceTests
                             {
                                 Destinations = [
                                     new Destination() {
-                                        Value = "pQerSFV+fievHP+guYoGJjx1CzFFrYWHAgWrLhn5473Z19M6+WMScLd1hsk808AEF/x+GpZKmNacFBf5BbQ=",
-                                        IsZk = true
+                                        Value = "idaZfzsAvZDBGWSy1Xq6VKiCLwKz0HD/5S6IflXw8nEtg7NjxbgtAzQHTtHH0jyU6nfqppiXTon/A1nfCEg=",
+                                        IsZk = true,
+                                        ZkId = "123"
                                     }
                                 ]
                             },
@@ -97,8 +98,11 @@ public class BrantaServiceTests
         };
         var optionsMock = new Mock<IOptions<BrantaClientOptions>>();
         optionsMock.Setup(x => x.Value).Returns(defaultOptions);
+        var secretGeneratorMock = new Mock<ISecretGenerator>();
+        secretGeneratorMock.Setup(x => x.Generate()).Returns("1234");
+        secretGeneratorMock.Setup(x => x.DeterministicNonce).Returns(true);
 
-        _brantaClientMock = new Mock<BrantaClient>(httpClientFactoryMock.Object, optionsMock.Object);
+        _brantaClientMock = new Mock<BrantaClient>(httpClientFactoryMock.Object, optionsMock.Object, secretGeneratorMock.Object);
 
         _brantaService = new BrantaService(
             _loggerMock.Object,

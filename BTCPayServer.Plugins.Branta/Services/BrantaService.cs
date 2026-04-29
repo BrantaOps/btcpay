@@ -54,6 +54,7 @@ public class BrantaService(
             return null;
         }
     }
+
     private async Task<InvoiceData> GetOrCreateBrantaInvoiceAsync(
         string invoiceId,
         InvoiceEntity btcPayInvoice,
@@ -102,7 +103,7 @@ public class BrantaService(
         var chainBtcId = PaymentTypes.CHAIN.GetPaymentMethodId("BTC");
         var lnBtcId = PaymentTypes.LN.GetPaymentMethodId("BTC");
 
-        var payments = btcPayInvoice
+        var destinations = btcPayInvoice
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
             .OrderBy(pp =>
@@ -131,7 +132,7 @@ public class BrantaService(
         {
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
-            PaymentId = payments
+            PaymentId = destinations
                 .OrderBy(p => p.Value.Length)
                 .First()
                 .Value,
@@ -157,7 +158,7 @@ public class BrantaService(
 
             var paymentRequest = new Payment()
             {
-                Destinations = payments,
+                Destinations = destinations,
                 Description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
                 TTL = ttl,
                 BtcPayServerPluginVersion = Helper.GetVersion()
