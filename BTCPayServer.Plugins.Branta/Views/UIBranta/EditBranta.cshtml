@@ -4,11 +4,12 @@
 @using BTCPayServer.Plugins.Branta.Models
 @using BTCPayServer.Plugins.Branta.Views
 @using Branta.Classes
+@using Branta.V2.Interfaces
 @using Branta.Enums
 @using Branta.V2.Classes
 @using System.Diagnostics
 
-@inject BrantaClient BrantaClient
+@inject IBrantaService BrantaService
 
 @model BTCPayServer.Plugins.Branta.Models.BrantaSettingsViewModel
 
@@ -17,14 +18,14 @@
     ViewData["BrantaSettingsActiveTab"] = "EditBranta";
     ViewData.SetActivePage(BrantaNavPages.Index, "Branta - Settings");
 
-    var productionApiKeyValid = !string.IsNullOrEmpty(Model.Settings.ProductionApiKey) ? await BrantaClient.IsApiKeyValidAsync(new BrantaClientOptions()
+    var productionApiKeyValid = !string.IsNullOrEmpty(Model.Settings.ProductionApiKey) ? await BrantaService.IsApiKeyValidAsync(new BrantaClientOptions()
     {
         BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Production,
         DefaultApiKey = Model.Settings.ProductionApiKey,
         Privacy = PrivacyMode.Loose
     }) : true;
 
-    var stagingApiKeyValid = !string.IsNullOrEmpty(Model.Settings.StagingApiKey) ? await BrantaClient.IsApiKeyValidAsync(new BrantaClientOptions()
+    var stagingApiKeyValid = !string.IsNullOrEmpty(Model.Settings.StagingApiKey) ? await BrantaService.IsApiKeyValidAsync(new BrantaClientOptions()
     {
         BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Staging,
         DefaultApiKey = Model.Settings.StagingApiKey,

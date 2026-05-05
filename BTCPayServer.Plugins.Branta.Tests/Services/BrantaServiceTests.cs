@@ -1,6 +1,6 @@
-﻿using Branta.Classes;
-using Branta.Enums;
-using Branta.V2.Classes;
+using Branta.Classes;
+using Branta.Exceptions;
+using Branta.V2.Interfaces;
 using Branta.V2.Models;
 using BTCPayServer.Models.InvoicingModels;
 using BTCPayServer.Payments;
@@ -12,100 +12,60 @@ using BTCPayServer.Plugins.Branta.Services;
 using BTCPayServer.Plugins.Branta.Tests.Classes;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
-using Moq.Protected;
-using System.Net;
-using System.Text.Json;
 
 namespace BTCPayServer.Plugins.Branta.Tests.Services;
 
 public class BrantaServiceTests
 {
-    private readonly Mock<ILogger<BrantaService>> _loggerMock;
+    private readonly Mock<ILogger<BtcPayBrantaService>> _loggerMock;
     private readonly Mock<IInvoiceService> _invoiceServiceMock;
     private readonly Mock<IInvoiceRepository> _invoiceRepositoryMock;
     private readonly Mock<IBrantaSettingsService> _brantaSettingsServiceMock;
-    private Mock<HttpMessageHandler> _httpMessageHandlerMock;
-    private readonly Mock<BrantaClient> _brantaClientMock;
-    private readonly BrantaService _brantaService;
+    private readonly Mock<IBrantaService> _brantaServiceMock;
+    private readonly BtcPayBrantaService _btcPayBrantaService;
 
     private const string ValidApiKey = "valid-api-key-123";
     private const string OnChainAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
     private const string LightningAddress = "lnbc15u1p3xnhl2pp5jptserfk3zk4qy42tlucycrfwxhydvlemu9pqr93tuzlv9cc7g3sdqsvfhkcap3xyhx7un8cqzpgxqzjcsp5f8c52y2stc300gl6s4xswtjpc37hrnnr3c9wvtgjfuvqmpm35evq9qyyssqy4lgd8tj637qcjp05rdpxxykjenthxftej7a2zzmwrmrl70fyj9hvj0rewhzj7jfyuwkwcg9g2jpwtk3wkjtwnkdks84hsnu8xps5vsq4gj5hs";
 
-    private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-    };
-
     public BrantaServiceTests()
     {
-        _loggerMock = new Mock<ILogger<BrantaService>>();
+        _loggerMock = new Mock<ILogger<BtcPayBrantaService>>();
         _invoiceServiceMock = new Mock<IInvoiceService>();
         _invoiceRepositoryMock = new Mock<IInvoiceRepository>();
         _brantaSettingsServiceMock = new Mock<IBrantaSettingsService>();
+        _brantaServiceMock = new Mock<IBrantaService>();
 
-        _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync((HttpRequestMessage request, CancellationToken token) =>
-            {
-                var authHeader = request.Headers.Authorization;
+        var zkEncryptedValue = AesEncryption.Encrypt(OnChainAddress, "1234");
 
-                if (authHeader?.Parameter == ValidApiKey)
-                {
-                    return new HttpResponseMessage
-                    {
-                        StatusCode = HttpStatusCode.Created,
-                        Content = new StringContent(
-                            JsonSerializer.Serialize(new Payment()
-                            {
-                                Destinations = [
-                                    new Destination() {
-                                        Value = "pQerSFV+fievHP+guYoGJjx1CzFFrYWHAgWrLhn5473Z19M6+WMScLd1hsk808AEF/x+GpZKmNacFBf5BbQ=",
-                                        IsZk = true
-                                    }
-                                ]
-                            },
-                            _serializerOptions),
-                            System.Text.Encoding.UTF8,
-                            "application/json")
-                    };
-                }
-                else
-                {
-                    return new HttpResponseMessage
-                    {
-                        StatusCode = HttpStatusCode.Unauthorized
-                    };
-                }
-            });
-        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
-        httpClientFactoryMock
-            .Setup(x => x.CreateClient(It.IsAny<string>()))
-            .Returns(new HttpClient(_httpMessageHandlerMock.Object));
+        _brantaServiceMock
+            .Setup(x => x.AddPaymentAsync(
+                It.IsAny<Payment>(),
+                It.Is<BrantaClientOptions>(o => o.DefaultApiKey != ValidApiKey),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new BrantaPaymentException("Unauthorized"));
 
-        var defaultOptions = new BrantaClientOptions
-        {
-            BaseUrl = BrantaServerBaseUrl.Localhost,
-            Privacy = PrivacyMode.Loose
-        };
-        var optionsMock = new Mock<IOptions<BrantaClientOptions>>();
-        optionsMock.Setup(x => x.Value).Returns(defaultOptions);
+        _brantaServiceMock
+            .Setup(x => x.AddPaymentAsync(
+                It.Is<Payment>(p => p.Destinations.All(d => !d.IsZk)),
+                It.Is<BrantaClientOptions>(o => o.DefaultApiKey == ValidApiKey),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new Payment { Destinations = [], VerifyUrl = $"https://branta.pro/v2/verify/{OnChainAddress}" }, ""));
 
-        _brantaClientMock = new Mock<BrantaClient>(httpClientFactoryMock.Object, optionsMock.Object);
+        _brantaServiceMock
+            .Setup(x => x.AddPaymentAsync(
+                It.Is<Payment>(p => p.Destinations.Any(d => d.IsZk)),
+                It.Is<BrantaClientOptions>(o => o.DefaultApiKey == ValidApiKey),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new Payment { Destinations = [], VerifyUrl = $"https://branta.pro/v2/verify/{Uri.EscapeDataString(zkEncryptedValue)}#k-xyz=1234" }, "1234"));
 
-        _brantaService = new BrantaService(
+        _btcPayBrantaService = new BtcPayBrantaService(
             _loggerMock.Object,
             _invoiceServiceMock.Object,
             _invoiceRepositoryMock.Object,
             _brantaSettingsServiceMock.Object,
-            _brantaClientMock.Object
+            _brantaServiceMock.Object
         );
     }
 
@@ -117,7 +77,7 @@ public class BrantaServiceTests
 
         SetSettings(invoice.StoreId, enabled: false);
 
-        var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.Null(result);
         _invoiceServiceMock.Verify(
@@ -142,7 +102,7 @@ public class BrantaServiceTests
 
         SetSettings(invoice.StoreId, productionApiKey: null);
 
-        var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.Null(result);
         _invoiceServiceMock.Verify(
@@ -165,7 +125,7 @@ public class BrantaServiceTests
 
         SetSettings(invoice.StoreId);
 
-        var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.Contains(OnChainAddress, result);
         _invoiceServiceMock.Verify(
@@ -188,12 +148,11 @@ public class BrantaServiceTests
 
         SetSettings(invoice.StoreId, enableZeroKnowledge: true);
 
-        var result = await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
-        var secret = TestHelper.GetSecret(result);
         var value = TestHelper.GetValueFromZeroKnowledgeUrl(result);
         Assert.NotNull(value);
-        var decryptedValue = TestHelper.Decrypt(value, "1234");
+        var decryptedValue = AesEncryption.Decrypt(value, "1234");
         Assert.Equal(OnChainAddress, decryptedValue);
 
         _invoiceServiceMock.Verify(
@@ -216,7 +175,7 @@ public class BrantaServiceTests
 
         SetSettings(invoice.StoreId, enableZeroKnowledge: true);
 
-        await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.DoesNotContain("?branta_id", checkoutModel.InvoiceBitcoinUrlQR);
         Assert.DoesNotContain("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);
@@ -230,7 +189,7 @@ public class BrantaServiceTests
 
         SetSettings(invoice.StoreId, enableZeroKnowledge: true, productionApiKey: "invalid-api-key");
 
-        await _brantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.DoesNotContain("branta_id", checkoutModel.InvoiceBitcoinUrlQR);
         Assert.DoesNotContain("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);

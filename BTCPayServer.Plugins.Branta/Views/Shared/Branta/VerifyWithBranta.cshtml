@@ -5,7 +5,7 @@
 @using BTCPayServer.Services.Stores
 @model BTCPayServer.Models.InvoicingModels.CheckoutModel
 
-@inject IBrantaService brantaService;
+@inject IBtcPayBrantaService brantaService;
 
 @{
     var url = await brantaService.CreateInvoiceIfNotExistsAsync(Model);
