@@ -168,10 +168,8 @@ public class BtcPayBrantaService(
 
             var (result, secret) = await brantaService.AddPaymentAsync(paymentRequest, options);
             invoiceData.VerifyUrl = result.VerifyUrl;
-            invoiceData.PaymentId = result.Destinations
-                .First(d => d.IsPrimary)!
-                .Value;
-
+            var path = new Uri(result.VerifyUrl).AbsolutePath;
+            invoiceData.PaymentId = Uri.UnescapeDataString(path[(path.LastIndexOf('/') + 1)..]);
             invoiceData.ZeroKnowledgeSecret = secret;
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;

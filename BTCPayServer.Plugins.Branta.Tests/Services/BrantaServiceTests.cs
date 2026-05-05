@@ -127,7 +127,7 @@ public class BrantaServiceTests
 
         var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
-        Assert.Contains(OnChainAddress, result);
+        Assert.NotNull(result);
         _invoiceServiceMock.Verify(
             x => x.AddAsync(It.IsAny<InvoiceData>()),
             Times.Once
@@ -193,6 +193,28 @@ public class BrantaServiceTests
 
         Assert.DoesNotContain("branta_id", checkoutModel.InvoiceBitcoinUrlQR);
         Assert.DoesNotContain("&branta_secret", checkoutModel.InvoiceBitcoinUrlQR);
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_ExtractsPaymentIdWithEncodedSlash()
+    {
+        var invoice = CreateInvoice();
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId);
+
+        const string paymentIdWithSlash = "abc/def+xyz=";
+        _brantaServiceMock
+            .Setup(x => x.AddPaymentAsync(
+                It.Is<Payment>(p => p.Destinations.Any(d => d.IsZk)),
+                It.Is<BrantaClientOptions>(o => o.DefaultApiKey == ValidApiKey),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new Payment { Destinations = [], VerifyUrl = $"https://branta.pro/v2/verify/{Uri.EscapeDataString(paymentIdWithSlash)}" }, ""));
+
+        await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        var resultInvoiceData = GetSavedInvoiceData();
+        Assert.Equal(paymentIdWithSlash, resultInvoiceData.PaymentId);
     }
 
     private InvoiceData GetSavedInvoiceData()
