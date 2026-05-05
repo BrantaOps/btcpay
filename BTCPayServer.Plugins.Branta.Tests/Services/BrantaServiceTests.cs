@@ -146,7 +146,7 @@ public class BrantaServiceTests
         var invoice = CreateInvoice();
         var checkoutModel = CreateCheckoutModel(invoice);
 
-        SetSettings(invoice.StoreId, enableZeroKnowledge: true);
+        SetSettings(invoice.StoreId);
 
         var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
@@ -173,7 +173,7 @@ public class BrantaServiceTests
         var invoice = CreateInvoice("BTC-Lightning");
         var checkoutModel = CreateCheckoutModel(invoice);
 
-        SetSettings(invoice.StoreId, enableZeroKnowledge: true);
+        SetSettings(invoice.StoreId);
 
         await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
@@ -187,7 +187,7 @@ public class BrantaServiceTests
         var invoice = CreateInvoice();
         var checkoutModel = CreateCheckoutModel(invoice);
 
-        SetSettings(invoice.StoreId, enableZeroKnowledge: true, productionApiKey: "invalid-api-key");
+        SetSettings(invoice.StoreId, productionApiKey: "invalid-api-key");
 
         await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
@@ -205,15 +205,13 @@ public class BrantaServiceTests
     private void SetSettings(
         string storeId,
         bool enabled = true,
-        string? productionApiKey = ValidApiKey,
-        bool enableZeroKnowledge = false)
+        string? productionApiKey = ValidApiKey)
     {
         var brantaSettings = new BrantaSettings()
         {
             BrantaEnabled = enabled,
             ProductionApiKey = productionApiKey,
-            PostDescriptionEnabled = true,
-            EnableZeroKnowledge = enableZeroKnowledge
+            PostDescriptionEnabled = true
         };
 
         _brantaSettingsServiceMock

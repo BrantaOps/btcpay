@@ -70,8 +70,7 @@ public class BtcPayBrantaService(
         Models.BrantaSettings settings,
         string btcPayInvoiceId)
     {
-        if (!settings.EnableZeroKnowledge ||
-            brantaInvoice.Status != Enums.InvoiceDataStatus.Success ||
+        if (brantaInvoice.Status != Enums.InvoiceDataStatus.Success ||
             checkoutModel.InvoiceBitcoinUrlQR.Contains(Constants.PaymentId))
         {
             return;
@@ -122,7 +121,7 @@ public class BtcPayBrantaService(
                 return new Destination
                 {
                     Value = pp.Destination,
-                    IsZk = brantaSettings.EnableZeroKnowledge && type.HasValue && ZkEligibleTypes.Contains(type.Value),
+                    IsZk = type.HasValue && ZkEligibleTypes.Contains(type.Value),
                     Type = type
                 };
             })
@@ -132,10 +131,6 @@ public class BtcPayBrantaService(
         {
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
-            PaymentId = destinations
-                .OrderBy(p => p.Value.Length)
-                .First()
-                .Value,
             Environment = brantaSettings.StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production,
             StoreId = btcPayInvoice.StoreId,
             PluginVersion = Helper.GetVersion()
@@ -173,11 +168,11 @@ public class BtcPayBrantaService(
 
             var (result, secret) = await brantaService.AddPaymentAsync(paymentRequest, options);
             invoiceData.VerifyUrl = result.VerifyUrl;
+            invoiceData.PaymentId = result.Destinations
+                .First(d => d.IsPrimary)!
+                .Value;
 
-            if (brantaSettings.EnableZeroKnowledge == true)
-            {
-                invoiceData.ZeroKnowledgeSecret = secret;
-            }
+            invoiceData.ZeroKnowledgeSecret = secret;
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;
         }
