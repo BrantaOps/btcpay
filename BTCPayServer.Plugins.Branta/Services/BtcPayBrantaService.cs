@@ -1,7 +1,7 @@
 ﻿using Branta.Classes;
 using Branta.Enums;
 using Branta.Exceptions;
-using Branta.V2.Classes;
+using Branta.V2.Interfaces;
 using Branta.V2.Models;
 using BTCPayServer.Models.InvoicingModels;
 using BTCPayServer.Payments;
@@ -19,12 +19,12 @@ using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
 
 namespace BTCPayServer.Plugins.Branta.Services;
 
-public class BrantaService(
-    ILogger<BrantaService> logger,
+public class BtcPayBrantaService(
+    ILogger<BtcPayBrantaService> logger,
     IInvoiceService invoiceService,
     IInvoiceRepository invoiceRepository,
     IBrantaSettingsService brantaSettingsService,
-    BrantaClient brantaClient) : IBrantaService
+    IBrantaService brantaService) : IBtcPayBrantaService
 {
     public async Task<string> CreateInvoiceIfNotExistsAsync(CheckoutModel checkoutModel)
     {
@@ -171,17 +171,12 @@ public class BrantaService(
                 Privacy = PrivacyMode.Loose
             };
 
+            var (result, secret) = await brantaService.AddPaymentAsync(paymentRequest, options);
+            invoiceData.VerifyUrl = result.VerifyUrl;
+
             if (brantaSettings.EnableZeroKnowledge == true)
             {
-                var (result, secret) = await brantaClient.AddZKPaymentAsync(paymentRequest, options);
-                invoiceData.VerifyUrl = result.VerifyUrl;
                 invoiceData.ZeroKnowledgeSecret = secret;
-                invoiceData.PaymentId = result.Destinations.FirstOrDefault()?.Value;
-            }
-            else
-            {
-                var result = await brantaClient.AddPaymentAsync(paymentRequest, options);
-                invoiceData.VerifyUrl = result.VerifyUrl;
             }
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;
@@ -207,7 +202,8 @@ public class BrantaService(
     private static readonly HashSet<DestinationType> ZkEligibleTypes =
     [
         DestinationType.BitcoinAddress,
-        DestinationType.Bolt11
+        DestinationType.Bolt11,
+        DestinationType.ArkAddress
     ];
 
     private static DestinationType? GetDestinationType(PaymentMethodId id, PaymentMethodId chainBtcId, PaymentMethodId lnBtcId)
@@ -220,6 +216,9 @@ public class BrantaService(
 
         if (id?.ToString().Contains("LNURL") == true)
             return DestinationType.LnUrl;
+
+        if (id == new PaymentMethodId("ARKADE"))
+            return DestinationType.ArkAddress;
 
         return null;
     }

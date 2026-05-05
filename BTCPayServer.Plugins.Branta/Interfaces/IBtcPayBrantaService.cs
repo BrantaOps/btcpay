@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace BTCPayServer.Plugins.Branta.Interfaces;
 
-public interface IBrantaService
+public interface IBtcPayBrantaService
 {
     Task<string> CreateInvoiceIfNotExistsAsync(CheckoutModel checkoutModel);
 }

@@ -44,6 +44,11 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.3.0" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <PackageReference Include="Branta" Version="3.0.1" />
+  </ItemGroup>
+
   <!-- If you reference another project, by default, the dlls won't be copied in the published plugin, you need <Private>true</Private> -->
   <!--
   <ItemGroup>
@@ -52,10 +57,6 @@
     </ProjectReference>
   </ItemGroup>
   -->
-
-  <ItemGroup>
-    <PackageReference Include="Branta" Version="2.1.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\btcpayserver\BTCPayServer\BTCPayServer.csproj" />
