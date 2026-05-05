@@ -1,4 +1,5 @@
 ﻿using BTCPayServer.Models.InvoicingModels;
+using System;
 
 namespace BTCPayServer.Plugins.Branta.Classes;
 
@@ -18,6 +19,6 @@ public static class Helper
 
         model.InvoiceBitcoinUrlQR +=
             (model.InvoiceBitcoinUrlQR.Contains('?') ? "&" : "?") +
-            $"{Constants.PaymentId}={payment}&{Constants.ZeroKnowledgeSecret}={secret}";
+            $"{Constants.PaymentId}={Uri.EscapeDataString(payment)}&{Constants.ZeroKnowledgeSecret}={Uri.EscapeDataString(secret)}";
     }
 }
