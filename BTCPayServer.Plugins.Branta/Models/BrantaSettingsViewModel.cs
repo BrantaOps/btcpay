@@ -2,7 +2,6 @@
 using Branta.Extensions;
 using BTCPayServer.Plugins.Branta.Classes;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 namespace BTCPayServer.Plugins.Branta.Models;
 
@@ -43,21 +42,19 @@ public class BrantaSettings
 
     public BrantaServerBaseUrl GetBrantaServerUrl()
     {
-        if (Debugger.IsAttached)
-        {
-            return BrantaServerBaseUrl.Localhost;
-        }
-
+#if DEBUG
+        return BrantaServerBaseUrl.Localhost;
+#else
         return StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production;
+#endif
     }
 
     public static string GetBrantaServerUrl(BrantaServerBaseUrl environment)
     {
-        if (Debugger.IsAttached)
-        {
-            return BrantaServerBaseUrl.Localhost.GetUrl();
-        }
-
+#if DEBUG
+        return BrantaServerBaseUrl.Localhost.GetUrl();
+#else
         return environment.GetUrl();
+#endif
     }
 }

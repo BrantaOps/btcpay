@@ -51,14 +51,14 @@ public class BrantaServiceTests
                 It.Is<Payment>(p => p.Destinations.All(d => !d.IsZk)),
                 It.Is<BrantaClientOptions>(o => o.DefaultApiKey == ValidApiKey),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new Payment { Destinations = [], VerifyUrl = $"https://branta.pro/v2/verify/{OnChainAddress}" }, ""));
+            .ReturnsAsync((new Payment { Destinations = [] }, "", $"https://branta.pro/v2/verify/{OnChainAddress}"));
 
         _brantaServiceMock
             .Setup(x => x.AddPaymentAsync(
                 It.Is<Payment>(p => p.Destinations.Any(d => d.IsZk)),
                 It.Is<BrantaClientOptions>(o => o.DefaultApiKey == ValidApiKey),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new Payment { Destinations = [], VerifyUrl = $"https://branta.pro/v2/verify/{Uri.EscapeDataString(zkEncryptedValue)}#k-xyz=1234" }, "1234"));
+            .ReturnsAsync((new Payment { Destinations = [] }, "1234", $"https://branta.pro/v2/verify/{Uri.EscapeDataString(zkEncryptedValue)}#k-xyz=1234"));
 
         _btcPayBrantaService = new BtcPayBrantaService(
             _loggerMock.Object,
@@ -209,7 +209,7 @@ public class BrantaServiceTests
                 It.Is<Payment>(p => p.Destinations.Any(d => d.IsZk)),
                 It.Is<BrantaClientOptions>(o => o.DefaultApiKey == ValidApiKey),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new Payment { Destinations = [], VerifyUrl = $"https://branta.pro/v2/verify/{Uri.EscapeDataString(paymentIdWithSlash)}" }, ""));
+            .ReturnsAsync((new Payment { Destinations = [] }, "", $"https://branta.pro/v2/verify/{Uri.EscapeDataString(paymentIdWithSlash)}"));
 
         await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 

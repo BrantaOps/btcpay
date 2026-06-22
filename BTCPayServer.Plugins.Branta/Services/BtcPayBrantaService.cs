@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
+using System.Text.Json;
 
 namespace BTCPayServer.Plugins.Branta.Services;
 
@@ -154,7 +155,9 @@ public class BtcPayBrantaService(
             var paymentRequest = new Payment()
             {
                 Destinations = destinations,
-                Description = brantaSettings.PostDescriptionEnabled ? GetDescription(btcPayInvoice) : null,
+                Metadata = brantaSettings.PostDescriptionEnabled
+                    ? JsonSerializer.Serialize(new { description = GetDescription(btcPayInvoice) })
+                    : null,
                 TTL = ttl,
                 BtcPayServerPluginVersion = Helper.GetVersion()
             };
@@ -166,9 +169,9 @@ public class BtcPayBrantaService(
                 Privacy = PrivacyMode.Loose
             };
 
-            var (result, secret) = await brantaService.AddPaymentAsync(paymentRequest, options);
-            invoiceData.VerifyUrl = result.VerifyUrl;
-            var path = new Uri(result.VerifyUrl).AbsolutePath;
+            var (result, secret, verifyUrl) = await brantaService.AddPaymentAsync(paymentRequest, options);
+            invoiceData.VerifyUrl = verifyUrl;
+            var path = new Uri(verifyUrl).AbsolutePath;
             invoiceData.PaymentId = Uri.UnescapeDataString(path[(path.LastIndexOf('/') + 1)..]);
             invoiceData.ZeroKnowledgeSecret = secret;
 
