@@ -102,18 +102,22 @@ public class BtcPayBrantaService(
 
         var chainBtcId = PaymentTypes.CHAIN.GetPaymentMethodId("BTC");
         var lnBtcId = PaymentTypes.LN.GetPaymentMethodId("BTC");
+        var lnurlBtcId = PaymentTypes.LNURL.GetPaymentMethodId("BTC");
 
-        var destinations = btcPayInvoice
-            .GetPaymentPrompts()
-            .Where(pp => pp.Destination != null)
+        var prompts = btcPayInvoice.GetPaymentPrompts().ToList();
+        var skippedLnurl = prompts.Count(pp => pp.PaymentMethodId == lnurlBtcId);
+        if (skippedLnurl > 0)
+        {
+            logger.LogInformation("Skipped {Count} LNURL-Pay payment prompt(s)", skippedLnurl);
+        }
+
+        var destinations = prompts
+            .Where(pp => pp.Destination != null && pp.PaymentMethodId != lnurlBtcId)
             .OrderBy(pp =>
             {
                 if (pp.PaymentMethodId == chainBtcId) return 0;
                 if (pp.PaymentMethodId == lnBtcId) return 1;
-
-                if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true ||
-                    pp.PaymentMethodId?.ToString().Contains("LNURL") == true) return 2;
-
+                if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true) return 2;
                 return 3;
             })
             .Select(pp =>
@@ -147,11 +151,23 @@ public class BtcPayBrantaService(
             return null;
         }
 
+        var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
+        invoiceData.ExpirationDate = now.AddSeconds(ttl);
+
+        if (destinations.Count == 0)
+        {
+            invoiceData.FailureReason = skippedLnurl > 0
+                ? "LNURL and Lightning Address are not verified by Branta."
+                : "No supported payment destinations to verify.";
+
+            invoiceData.ProcessingTime = (int)sw.Elapsed.TotalMilliseconds;
+            await invoiceService.AddAsync(invoiceData);
+
+            return invoiceData;
+        }
+
         try
         {
-            var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
-            invoiceData.ExpirationDate = now.AddSeconds(ttl);
-
             var paymentRequest = new Payment()
             {
                 Destinations = destinations,
@@ -209,9 +225,6 @@ public class BtcPayBrantaService(
 
         if (id == lnBtcId || id?.ToString().Contains("Lightning") == true)
             return DestinationType.Bolt11;
-
-        if (id?.ToString().Contains("LNURL") == true)
-            return DestinationType.LnUrl;
 
         if (id == new PaymentMethodId("ARKADE"))
             return DestinationType.ArkAddress;

@@ -1,4 +1,5 @@
 using Branta.Classes;
+using Branta.Enums;
 using Branta.Exceptions;
 using Branta.V2.Interfaces;
 using Branta.V2.Models;
@@ -28,6 +29,7 @@ public class BrantaServiceTests
     private const string ValidApiKey = "valid-api-key-123";
     private const string OnChainAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
     private const string LightningAddress = "lnbc15u1p3xnhl2pp5jptserfk3zk4qy42tlucycrfwxhydvlemu9pqr93tuzlv9cc7g3sdqsvfhkcap3xyhx7un8cqzpgxqzjcsp5f8c52y2stc300gl6s4xswtjpc37hrnnr3c9wvtgjfuvqmpm35evq9qyyssqy4lgd8tj637qcjp05rdpxxykjenthxftej7a2zzmwrmrl70fyj9hvj0rewhzj7jfyuwkwcg9g2jpwtk3wkjtwnkdks84hsnu8xps5vsq4gj5hs";
+    private const string LnUrlDestination = "LNURL1DP68GURN8GHJ";
 
     public BrantaServiceTests()
     {
@@ -168,6 +170,86 @@ public class BrantaServiceTests
     }
 
     [Fact]
+    public async Task CreateInvoiceIfNotExists_SkipsLnurlPromptAndPostsSupportedDestinations()
+    {
+        var invoice = CreateInvoiceWithPrompts(
+            ("BTC", OnChainAddress),
+            ("BTC-Lightning", LightningAddress),
+            (PaymentTypes.LNURL.GetPaymentMethodId("BTC").ToString(), LnUrlDestination)
+        );
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId);
+
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        Assert.NotNull(result);
+        AssertPostedOnChainAndBolt11();
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_SkipsLnurlPromptWithNullDestination()
+    {
+        var invoice = CreateInvoiceWithPrompts(
+            ("BTC", OnChainAddress),
+            (PaymentTypes.LN.GetPaymentMethodId("BTC").ToString(), LightningAddress),
+            (PaymentTypes.LNURL.GetPaymentMethodId("BTC").ToString(), null)
+        );
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId);
+
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        Assert.NotNull(result);
+        AssertPostedOnChainAndBolt11();
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_DoesNotPostWhenOnlyLnurlPrompts()
+    {
+        var invoice = CreateInvoiceWithPrompts(
+            (PaymentTypes.LNURL.GetPaymentMethodId("BTC").ToString(), null)
+        );
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId);
+
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        Assert.Null(result);
+        _brantaServiceMock.Verify(
+            x => x.AddPaymentAsync(
+                It.IsAny<Payment>(),
+                It.IsAny<BrantaClientOptions>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        var resultInvoiceData = GetSavedInvoiceData();
+        Assert.Equal("LNURL and Lightning Address are not verified by Branta.", resultInvoiceData.FailureReason);
+        Assert.Equal(InvoiceDataStatus.None, resultInvoiceData.Status);
+        Assert.True(resultInvoiceData.ExpirationDate > DateTime.UtcNow.AddMinutes(20));
+        Assert.True(resultInvoiceData.ExpirationDate < DateTime.UtcNow.AddMinutes(40));
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_PostsLightningPrefixedBolt11()
+    {
+        var destination = $"lightning:{LightningAddress}";
+        var invoice = CreateInvoiceWithPrompts(("BTC-Lightning", destination));
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId);
+
+        await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        var posted = GetPostedPayment();
+        Assert.Single(posted.Destinations);
+        Assert.Equal(destination, posted.Destinations[0].Value);
+        Assert.Equal(DestinationType.Bolt11, posted.Destinations[0].Type);
+    }
+
+    [Fact]
     public async Task CreateInvoiceIfNotExists_DoesNotAddZeroKnowledgeParamsBolt11()
     {
         var invoice = CreateInvoice("BTC-Lightning");
@@ -224,6 +306,24 @@ public class BrantaServiceTests
             .Arguments[0] as InvoiceData ?? throw new NullReferenceException();
     }
 
+    private Payment GetPostedPayment()
+    {
+        return _brantaServiceMock.Invocations
+            .First(i => i.Method.Name == nameof(IBrantaService.AddPaymentAsync))
+            .Arguments[0] as Payment ?? throw new NullReferenceException();
+    }
+
+    private void AssertPostedOnChainAndBolt11()
+    {
+        var posted = GetPostedPayment();
+        Assert.Equal(2, posted.Destinations.Count);
+        Assert.Equal(OnChainAddress, posted.Destinations[0].Value);
+        Assert.Equal(DestinationType.BitcoinAddress, posted.Destinations[0].Type);
+        Assert.Equal(LightningAddress, posted.Destinations[1].Value);
+        Assert.Equal(DestinationType.Bolt11, posted.Destinations[1].Type);
+        Assert.DoesNotContain(posted.Destinations, d => d.Type == DestinationType.LnUrl);
+    }
+
     private void SetSettings(
         string storeId,
         bool enabled = true,
@@ -243,6 +343,12 @@ public class BrantaServiceTests
 
     private InvoiceEntity CreateInvoice(string paymentMethodId = "BTC")
     {
+        var destination = paymentMethodId.Contains("Lightning") ? LightningAddress : OnChainAddress;
+        return CreateInvoiceWithPrompts((paymentMethodId, destination));
+    }
+
+    private InvoiceEntity CreateInvoiceWithPrompts(params (string paymentMethodId, string? destination)[] prompts)
+    {
         var invoice = new InvoiceEntity()
         {
             Id = "123",
@@ -254,13 +360,16 @@ public class BrantaServiceTests
             }
         };
 
-        var btcPaymentMethodId = PaymentMethodId.Parse(paymentMethodId);
-        invoice.SetPaymentPrompt(btcPaymentMethodId, new PaymentPrompt()
+        foreach (var (paymentMethodId, destination) in prompts)
         {
-            Destination = paymentMethodId.Contains("Lightning") ? LightningAddress : OnChainAddress,
-            PaymentMethodId = btcPaymentMethodId,
-            Currency = "BTC"
-        });
+            var parsedId = PaymentMethodId.Parse(paymentMethodId);
+            invoice.SetPaymentPrompt(parsedId, new PaymentPrompt()
+            {
+                Destination = destination,
+                PaymentMethodId = parsedId,
+                Currency = "BTC"
+            });
+        }
 
         _invoiceRepositoryMock
             .Setup(x => x.GetInvoice(invoice.Id))
