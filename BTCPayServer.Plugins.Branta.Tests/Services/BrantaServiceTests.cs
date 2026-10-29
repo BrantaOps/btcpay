@@ -184,21 +184,32 @@ public class BrantaServiceTests
         var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
         Assert.NotNull(result);
-        var posted = GetPostedPayment();
-        Assert.Equal(2, posted.Destinations.Count);
-        Assert.Equal(OnChainAddress, posted.Destinations[0].Value);
-        Assert.Equal(DestinationType.BitcoinAddress, posted.Destinations[0].Type);
-        Assert.Equal(LightningAddress, posted.Destinations[1].Value);
-        Assert.Equal(DestinationType.Bolt11, posted.Destinations[1].Type);
-        Assert.DoesNotContain(posted.Destinations, d => d.Type == DestinationType.LnUrl);
-        Assert.DoesNotContain(posted.Destinations, d => d.Value.Contains("LNURL", StringComparison.OrdinalIgnoreCase));
+        AssertPostedOnChainAndBolt11();
+    }
+
+    [Fact]
+    public async Task CreateInvoiceIfNotExists_SkipsLnurlPromptWithNullDestination()
+    {
+        var invoice = CreateInvoiceWithPrompts(
+            ("BTC", OnChainAddress),
+            (PaymentTypes.LN.GetPaymentMethodId("BTC").ToString(), LightningAddress),
+            (PaymentTypes.LNURL.GetPaymentMethodId("BTC").ToString(), null)
+        );
+        var checkoutModel = CreateCheckoutModel(invoice);
+
+        SetSettings(invoice.StoreId);
+
+        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+
+        Assert.NotNull(result);
+        AssertPostedOnChainAndBolt11();
     }
 
     [Fact]
     public async Task CreateInvoiceIfNotExists_DoesNotPostWhenOnlyLnurlPrompts()
     {
         var invoice = CreateInvoiceWithPrompts(
-            (PaymentTypes.LNURL.GetPaymentMethodId("BTC").ToString(), LnUrlDestination)
+            (PaymentTypes.LNURL.GetPaymentMethodId("BTC").ToString(), null)
         );
         var checkoutModel = CreateCheckoutModel(invoice);
 
@@ -215,29 +226,25 @@ public class BrantaServiceTests
             Times.Never);
 
         var resultInvoiceData = GetSavedInvoiceData();
-        Assert.Equal("No supported payment destinations to verify.", resultInvoiceData.FailureReason);
+        Assert.Equal("LNURL and Lightning Address are not verified by Branta.", resultInvoiceData.FailureReason);
         Assert.Equal(InvoiceDataStatus.None, resultInvoiceData.Status);
     }
 
     [Fact]
-    public async Task CreateInvoiceIfNotExists_SkipsLightningPrefixedLnurlValue()
+    public async Task CreateInvoiceIfNotExists_PostsLightningPrefixedBolt11()
     {
-        var invoice = CreateInvoiceWithPrompts(
-            ("BTC-Lightning", $"lightning:{LnUrlDestination}")
-        );
+        var destination = $"lightning:{LightningAddress}";
+        var invoice = CreateInvoiceWithPrompts(("BTC-Lightning", destination));
         var checkoutModel = CreateCheckoutModel(invoice);
 
         SetSettings(invoice.StoreId);
 
-        var result = await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
+        await _btcPayBrantaService.CreateInvoiceIfNotExistsAsync(checkoutModel);
 
-        Assert.Null(result);
-        _brantaServiceMock.Verify(
-            x => x.AddPaymentAsync(
-                It.IsAny<Payment>(),
-                It.IsAny<BrantaClientOptions>(),
-                It.IsAny<CancellationToken>()),
-            Times.Never);
+        var posted = GetPostedPayment();
+        Assert.Single(posted.Destinations);
+        Assert.Equal(destination, posted.Destinations[0].Value);
+        Assert.Equal(DestinationType.Bolt11, posted.Destinations[0].Type);
     }
 
     [Fact]
@@ -304,6 +311,17 @@ public class BrantaServiceTests
             .Arguments[0] as Payment ?? throw new NullReferenceException();
     }
 
+    private void AssertPostedOnChainAndBolt11()
+    {
+        var posted = GetPostedPayment();
+        Assert.Equal(2, posted.Destinations.Count);
+        Assert.Equal(OnChainAddress, posted.Destinations[0].Value);
+        Assert.Equal(DestinationType.BitcoinAddress, posted.Destinations[0].Type);
+        Assert.Equal(LightningAddress, posted.Destinations[1].Value);
+        Assert.Equal(DestinationType.Bolt11, posted.Destinations[1].Type);
+        Assert.DoesNotContain(posted.Destinations, d => d.Type == DestinationType.LnUrl);
+    }
+
     private void SetSettings(
         string storeId,
         bool enabled = true,
@@ -327,7 +345,7 @@ public class BrantaServiceTests
         return CreateInvoiceWithPrompts((paymentMethodId, destination));
     }
 
-    private InvoiceEntity CreateInvoiceWithPrompts(params (string paymentMethodId, string destination)[] prompts)
+    private InvoiceEntity CreateInvoiceWithPrompts(params (string paymentMethodId, string? destination)[] prompts)
     {
         var invoice = new InvoiceEntity()
         {
