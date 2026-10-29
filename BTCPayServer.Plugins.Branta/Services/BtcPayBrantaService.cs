@@ -103,17 +103,24 @@ public class BtcPayBrantaService(
         var chainBtcId = PaymentTypes.CHAIN.GetPaymentMethodId("BTC");
         var lnBtcId = PaymentTypes.LN.GetPaymentMethodId("BTC");
 
-        var destinations = btcPayInvoice
+        var prompts = btcPayInvoice
             .GetPaymentPrompts()
             .Where(pp => pp.Destination != null)
+            .ToList();
+
+        var skipped = prompts.Count(IsUnsupportedPaymentPrompt);
+        if (skipped > 0)
+        {
+            logger.LogInformation("Skipped {Count} LNURL / Lightning Address payment prompt(s)", skipped);
+        }
+
+        var destinations = prompts
+            .Where(pp => !IsUnsupportedPaymentPrompt(pp))
             .OrderBy(pp =>
             {
                 if (pp.PaymentMethodId == chainBtcId) return 0;
                 if (pp.PaymentMethodId == lnBtcId) return 1;
-
-                if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true ||
-                    pp.PaymentMethodId?.ToString().Contains("LNURL") == true) return 2;
-
+                if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true) return 2;
                 return 3;
             })
             .Select(pp =>
@@ -145,6 +152,16 @@ public class BtcPayBrantaService(
             await invoiceService.AddAsync(invoiceData);
 
             return null;
+        }
+
+        if (destinations.Count == 0)
+        {
+            invoiceData.FailureReason = "No supported payment destinations to verify.";
+
+            invoiceData.ProcessingTime = (int)sw.Elapsed.TotalMilliseconds;
+            await invoiceService.AddAsync(invoiceData);
+
+            return invoiceData;
         }
 
         try
@@ -202,6 +219,24 @@ public class BtcPayBrantaService(
         DestinationType.ArkAddress
     ];
 
+    private static bool IsUnsupportedPaymentPrompt(PaymentPrompt pp)
+    {
+        var id = pp.PaymentMethodId?.ToString();
+        if (!string.IsNullOrEmpty(id) && id.Contains("LNURL", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return IsLnurlDestination(pp.Destination);
+    }
+
+    private static bool IsLnurlDestination(string? value)
+    {
+        var destination = value?.Trim() ?? "";
+        if (destination.StartsWith("lightning:", StringComparison.OrdinalIgnoreCase))
+            destination = destination["lightning:".Length..];
+
+        return destination.StartsWith("lnurl", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static DestinationType? GetDestinationType(PaymentMethodId id, PaymentMethodId chainBtcId, PaymentMethodId lnBtcId)
     {
         if (id == chainBtcId)
@@ -209,9 +244,6 @@ public class BtcPayBrantaService(
 
         if (id == lnBtcId || id?.ToString().Contains("Lightning") == true)
             return DestinationType.Bolt11;
-
-        if (id?.ToString().Contains("LNURL") == true)
-            return DestinationType.LnUrl;
 
         if (id == new PaymentMethodId("ARKADE"))
             return DestinationType.ArkAddress;
