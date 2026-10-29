@@ -151,6 +151,9 @@ public class BtcPayBrantaService(
             return null;
         }
 
+        var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
+        invoiceData.ExpirationDate = now.AddSeconds(ttl);
+
         if (destinations.Count == 0)
         {
             invoiceData.FailureReason = skippedLnurl > 0
@@ -165,9 +168,6 @@ public class BtcPayBrantaService(
 
         try
         {
-            var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
-            invoiceData.ExpirationDate = now.AddSeconds(ttl);
-
             var paymentRequest = new Payment()
             {
                 Destinations = destinations,

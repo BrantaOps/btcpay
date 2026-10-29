@@ -228,6 +228,8 @@ public class BrantaServiceTests
         var resultInvoiceData = GetSavedInvoiceData();
         Assert.Equal("LNURL and Lightning Address are not verified by Branta.", resultInvoiceData.FailureReason);
         Assert.Equal(InvoiceDataStatus.None, resultInvoiceData.Status);
+        Assert.True(resultInvoiceData.ExpirationDate > DateTime.UtcNow.AddMinutes(20));
+        Assert.True(resultInvoiceData.ExpirationDate < DateTime.UtcNow.AddMinutes(40));
     }
 
     [Fact]
