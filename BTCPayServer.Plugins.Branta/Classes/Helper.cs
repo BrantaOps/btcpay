@@ -10,7 +10,7 @@ public static class Helper
         return typeof(BrantaPlugin).Assembly.GetName().Version?.ToString();
     }
 
-    public static void SetZeroKnowledgeParams(this CheckoutModel model, string payment, string secret)
+    public static void SetBrantaParams(this CheckoutModel model, string payment, string secret)
     {
         if (payment == null || secret == null || model.PaymentMethodId != "BTC-CHAIN")
         {
@@ -19,6 +19,6 @@ public static class Helper
 
         model.InvoiceBitcoinUrlQR +=
             (model.InvoiceBitcoinUrlQR.Contains('?') ? "&" : "?") +
-            $"{Constants.PaymentId}={Uri.EscapeDataString(payment)}&{Constants.ZeroKnowledgeSecret}={Uri.EscapeDataString(secret)}";
+            $"{Constants.PaymentId}={Uri.EscapeDataString(payment)}&{Constants.Secret}={Uri.EscapeDataString(secret)}";
     }
 }

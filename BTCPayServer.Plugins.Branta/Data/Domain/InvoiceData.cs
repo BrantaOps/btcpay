@@ -1,6 +1,5 @@
 ﻿using Branta;
 using BTCPayServer.Plugins.Branta.Enums;
-using BTCPayServer.Plugins.Branta.Models;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -29,7 +28,8 @@ public class InvoiceData
 
     public DateTime ExpirationDate { get; set; }
 
-    public string ZeroKnowledgeSecret { get; set; }
+    [Column("ZeroKnowledgeSecret")]
+    public string Secret { get; set; }
 
     public string PluginVersion { get; set; }
 

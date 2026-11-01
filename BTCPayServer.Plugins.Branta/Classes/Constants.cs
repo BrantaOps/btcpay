@@ -3,5 +3,5 @@
 public class Constants
 {
     public const string PaymentId = "branta_id";
-    public const string ZeroKnowledgeSecret = "branta_secret";
+    public const string Secret = "branta_secret";
 }

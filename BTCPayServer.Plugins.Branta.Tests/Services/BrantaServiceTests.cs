@@ -136,10 +136,13 @@ public class BrantaServiceTests
         Assert.NotNull(resultInvoiceData);
         Assert.Null(resultInvoiceData.FailureReason);
         Assert.Equal(InvoiceDataStatus.Success, resultInvoiceData.Status);
-        Assert.Equal("1234", resultInvoiceData.ZeroKnowledgeSecret);
+        Assert.Equal("1234", resultInvoiceData.Secret);
 
         var posted = GetPostedPayment();
-        Assert.Equal("Order 456 - Description", posted.Description);
+        Assert.Null(posted.Description);
+        Assert.NotNull(posted.Metadata);
+        var metadata = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(posted.Metadata);
+        Assert.Equal("Order 456 - Description", metadata!["description"]);
         Assert.Equal(Helper.GetVersion(), posted.BtcPayServerPluginVersion);
         Assert.Equal(DestinationType.BitcoinAddress, posted.Destinations[0].Type);
         Assert.False(string.IsNullOrEmpty(posted.Destinations[0].Id));
@@ -241,7 +244,7 @@ public class BrantaServiceTests
     }
 
     [Fact]
-    public async Task CreateInvoiceIfNotExists_DoesNotAddZeroKnowledgeParamsBolt11()
+    public async Task CreateInvoiceIfNotExists_DoesNotAddBrantaParamsBolt11()
     {
         var invoice = CreateInvoice("BTC-Lightning");
         var checkoutModel = CreateCheckoutModel(invoice);
@@ -255,7 +258,7 @@ public class BrantaServiceTests
     }
 
     [Fact]
-    public async Task CreateInvoiceIfNotExists_ShouldNotSetZeroKnowledgeIfRequestUnsuccessful()
+    public async Task CreateInvoiceIfNotExists_ShouldNotSetBrantaParamsIfRequestUnsuccessful()
     {
         var invoice = CreateInvoice();
         var checkoutModel = CreateCheckoutModel(invoice);

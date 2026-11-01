@@ -35,7 +35,7 @@ public class BtcPayBrantaService(
                 brantaSettings
             );
 
-            await AddZeroKnowledgeParametersIfNeededAsync(
+            await AddBrantaParametersIfNeededAsync(
                 checkoutModel,
                 brantaInvoice,
                 brantaSettings,
@@ -60,7 +60,7 @@ public class BtcPayBrantaService(
             ?? await CreateInvoiceAsync(btcPayInvoice, settings);
     }
 
-    private async Task AddZeroKnowledgeParametersIfNeededAsync(
+    private async Task AddBrantaParametersIfNeededAsync(
         CheckoutModel checkoutModel,
         InvoiceData brantaInvoice,
         Models.BrantaSettings settings,
@@ -78,9 +78,9 @@ public class BtcPayBrantaService(
 
         var payload = JObject.FromObject(additionalData);
         payload[Constants.PaymentId] = brantaInvoice.PaymentId;
-        payload[Constants.ZeroKnowledgeSecret] = brantaInvoice.ZeroKnowledgeSecret;
+        payload[Constants.Secret] = brantaInvoice.Secret;
 
-        checkoutModel.SetZeroKnowledgeParams(brantaInvoice.PaymentId, brantaInvoice.ZeroKnowledgeSecret);
+        checkoutModel.SetBrantaParams(brantaInvoice.PaymentId, brantaInvoice.Secret);
 
         await invoiceRepository.UpdateInvoiceMetadata(
             btcPayInvoiceId,
@@ -159,7 +159,7 @@ public class BtcPayBrantaService(
 
             if (brantaSettings.PostDescriptionEnabled)
             {
-                builder.SetDescription(GetDescription(btcPayInvoice));
+                builder.AddMetadata("description", GetDescription(btcPayInvoice));
             }
 
             foreach (var pp in destinationPrompts)
@@ -169,7 +169,7 @@ public class BtcPayBrantaService(
 
             var options = new BrantaApiOptions()
             {
-                Environment = brantaSettings.GetBrantaServerUrl(),
+                Environment = brantaSettings.GetEnvironment(),
                 ApiKey = brantaSettings.GetAPIKey()
             };
 
@@ -177,7 +177,7 @@ public class BtcPayBrantaService(
             invoiceData.VerifyUrl = posted.VerifyUrl;
             var path = new Uri(posted.VerifyUrl).AbsolutePath;
             invoiceData.PaymentId = Uri.UnescapeDataString(path[(path.LastIndexOf('/') + 1)..]);
-            invoiceData.ZeroKnowledgeSecret = posted.Secret;
+            invoiceData.Secret = posted.Secret;
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;
         }

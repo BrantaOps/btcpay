@@ -40,7 +40,7 @@ public class BrantaSettings
         return StagingEnabled ? StagingApiKey : ProductionApiKey;
     }
 
-    public BrantaEnvironment GetBrantaServerUrl()
+    public BrantaEnvironment GetEnvironment()
     {
 #if DEBUG
         return BrantaEnvironment.Localhost;
