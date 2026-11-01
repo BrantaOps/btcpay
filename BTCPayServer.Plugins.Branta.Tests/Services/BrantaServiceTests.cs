@@ -1,6 +1,7 @@
 using Branta;
 using BTCPayServer.Models.InvoicingModels;
 using BTCPayServer.Payments;
+using BTCPayServer.Plugins.Branta.Classes;
 using BTCPayServer.Plugins.Branta.Data.Domain;
 using BTCPayServer.Plugins.Branta.Enums;
 using BTCPayServer.Plugins.Branta.Interfaces;
@@ -131,6 +132,7 @@ public class BrantaServiceTests
 
         var posted = GetPostedPayment();
         Assert.Equal("Order 456 - Description", posted.Description);
+        Assert.Equal(Helper.GetVersion(), posted.BtcPayServerPluginVersion);
         Assert.Equal(DestinationType.BitcoinAddress, posted.Destinations[0].Type);
         Assert.False(string.IsNullOrEmpty(posted.Destinations[0].Id));
     }

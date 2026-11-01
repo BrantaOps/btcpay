@@ -154,7 +154,8 @@ public class BtcPayBrantaService(
         try
         {
             var builder = new PaymentBuilder()
-                .SetTtl(ttl);
+                .SetTtl(ttl)
+                .SetBtcPayServerPluginVersion(Helper.GetVersion());
 
             if (brantaSettings.PostDescriptionEnabled)
             {
