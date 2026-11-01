@@ -1,4 +1,4 @@
-using Branta.V2.Extensions;
+using Branta;
 using BTCPayServer.Abstractions.Contracts;
 using BTCPayServer.Abstractions.Models;
 using BTCPayServer.Payments;
@@ -27,7 +27,7 @@ public class BrantaPlugin : BaseBTCPayServerPlugin
             factory.ConfigureBuilder(o);
         });
 
-        services.ConfigureBrantaServices();
+        services.ConfigureBrantaServices(new BrantaApiOptions());
         services.AddScoped<IBtcPayBrantaService, BtcPayBrantaService>();
         services.AddScoped<IBrantaSettingsService, BrantaSettingsService>();
         services.AddScoped<IInvoiceService, InvoiceService>();

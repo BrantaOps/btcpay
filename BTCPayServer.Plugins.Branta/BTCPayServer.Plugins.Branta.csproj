@@ -7,7 +7,7 @@
   <PropertyGroup>
     <Product>Branta</Product>
     <Description>Easily verify payments, checkouts, and invoices.</Description>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -46,7 +46,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Branta" Version="3.2.3" />
+    <PackageReference Include="Branta" Version="4.0.2" />
   </ItemGroup>
 
   <!-- If you reference another project, by default, the dlls won't be copied in the published plugin, you need <Private>true</Private> -->
