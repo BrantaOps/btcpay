@@ -82,6 +82,14 @@ public class BrantaServiceTests
         Assert.Equal(checkoutModel.InvoiceId, resultInvoiceData.InvoiceId);
         Assert.Equal(checkoutModel.StoreId, resultInvoiceData.StoreId);
         Assert.Equal(InvoiceDataStatus.None, resultInvoiceData.Status);
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((_, _) => true),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Never);
     }
 
     [Fact]

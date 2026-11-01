@@ -133,7 +133,7 @@ public class BtcPayBrantaService(
             invoiceData.ProcessingTime = (int)sw.Elapsed.TotalMilliseconds;
             await invoiceService.AddAsync(invoiceData);
 
-            return null;
+            return invoiceData;
         }
 
         var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
