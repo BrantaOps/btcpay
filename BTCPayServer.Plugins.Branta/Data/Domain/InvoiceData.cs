@@ -1,4 +1,4 @@
-﻿using Branta.Enums;
+﻿using Branta;
 using BTCPayServer.Plugins.Branta.Enums;
 using BTCPayServer.Plugins.Branta.Models;
 using System;
@@ -21,7 +21,7 @@ public class InvoiceData
 
     public int ProcessingTime { get; set; }
 
-    public BrantaServerBaseUrl Environment { get; set; }
+    public BrantaEnvironment Environment { get; set; }
 
     public InvoiceDataStatus Status { get; set; }
 

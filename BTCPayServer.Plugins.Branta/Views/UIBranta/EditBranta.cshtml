@@ -3,10 +3,7 @@
 @using BTCPayServer.Plugins.Branta.Enums
 @using BTCPayServer.Plugins.Branta.Models
 @using BTCPayServer.Plugins.Branta.Views
-@using Branta.Classes
-@using Branta.V2.Interfaces
-@using Branta.Enums
-@using Branta.V2.Classes
+@using Branta
 @using System.Diagnostics
 
 @inject IBrantaService BrantaService
@@ -18,18 +15,16 @@
     ViewData["BrantaSettingsActiveTab"] = "EditBranta";
     ViewData.SetActivePage(BrantaNavPages.Index, "Branta - Settings");
 
-    var productionApiKeyValid = !string.IsNullOrEmpty(Model.Settings.ProductionApiKey) ? await BrantaService.IsApiKeyValidAsync(new BrantaClientOptions()
+    var productionApiKeyValid = !string.IsNullOrEmpty(Model.Settings.ProductionApiKey) ? await BrantaService.IsApiKeyValidAsync(new BrantaApiOptions()
     {
-        BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Production,
-        DefaultApiKey = Model.Settings.ProductionApiKey,
-        Privacy = PrivacyMode.Loose
+        Environment = Debugger.IsAttached ? BrantaEnvironment.Localhost : BrantaEnvironment.Production,
+        ApiKey = Model.Settings.ProductionApiKey
     }) : true;
 
-    var stagingApiKeyValid = !string.IsNullOrEmpty(Model.Settings.StagingApiKey) ? await BrantaService.IsApiKeyValidAsync(new BrantaClientOptions()
+    var stagingApiKeyValid = !string.IsNullOrEmpty(Model.Settings.StagingApiKey) ? await BrantaService.IsApiKeyValidAsync(new BrantaApiOptions()
     {
-        BaseUrl = Debugger.IsAttached ? BrantaServerBaseUrl.Localhost : BrantaServerBaseUrl.Staging,
-        DefaultApiKey = Model.Settings.StagingApiKey,
-        Privacy = PrivacyMode.Loose
+        Environment = Debugger.IsAttached ? BrantaEnvironment.Localhost : BrantaEnvironment.Staging,
+        ApiKey = Model.Settings.StagingApiKey
     }) : true;
 
     var advancedSettingsError = !stagingApiKeyValid;
@@ -154,7 +149,7 @@
                 </div>
             </div>
             <span asp-validation-for="Settings.ProductionApiKey" class="text-danger"></span>
-            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaServerBaseUrl.Production)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
+            <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaEnvironment.Production)/session/new" target="_blank">Dashboard</a> to create an API Key.</p>
         </div>
 
         <div style="display: flex; flex-direction: row; align-items: center;">
@@ -222,7 +217,7 @@
                         </div>
                     </div>
                     <span asp-validation-for="Settings.StagingApiKey" class="text-danger"></span>
-                    <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaServerBaseUrl.Staging)/session/new" target="_blank">Staging Dashboard</a> to create an API Key.</p>
+                    <p class="text-secondary mt-2">Visit your Branta <a href="@BrantaSettings.GetBrantaServerUrl(BrantaEnvironment.Staging)/session/new" target="_blank">Staging Dashboard</a> to create an API Key.</p>
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
-﻿using Branta.Enums;
-using Branta.Extensions;
+﻿using Branta;
 using BTCPayServer.Plugins.Branta.Classes;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace BTCPayServer.Plugins.Branta.Models;
@@ -40,21 +40,26 @@ public class BrantaSettings
         return StagingEnabled ? StagingApiKey : ProductionApiKey;
     }
 
-    public BrantaServerBaseUrl GetBrantaServerUrl()
+    public BrantaEnvironment GetBrantaServerUrl()
     {
 #if DEBUG
-        return BrantaServerBaseUrl.Localhost;
+        return BrantaEnvironment.Localhost;
 #else
-        return StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production;
+        return StagingEnabled ? BrantaEnvironment.Staging : BrantaEnvironment.Production;
 #endif
     }
 
-    public static string GetBrantaServerUrl(BrantaServerBaseUrl environment)
+    public static string GetBrantaServerUrl(BrantaEnvironment environment)
     {
 #if DEBUG
-        return BrantaServerBaseUrl.Localhost.GetUrl();
-#else
-        return environment.GetUrl();
+        environment = BrantaEnvironment.Localhost;
 #endif
+        return environment switch
+        {
+            BrantaEnvironment.Staging => "https://staging.guardrail.branta.pro",
+            BrantaEnvironment.Production => "https://guardrail.branta.pro",
+            BrantaEnvironment.Localhost => "http://localhost:3000",
+            _ => throw new ArgumentOutOfRangeException(nameof(environment), environment, null)
+        };
     }
 }

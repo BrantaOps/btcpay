@@ -1,8 +1,4 @@
-﻿using Branta.Classes;
-using Branta.Enums;
-using Branta.Exceptions;
-using Branta.V2.Interfaces;
-using Branta.V2.Models;
+﻿using Branta;
 using BTCPayServer.Models.InvoicingModels;
 using BTCPayServer.Payments;
 using BTCPayServer.Plugins.Branta.Classes;
@@ -16,7 +12,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using InvoiceData = BTCPayServer.Plugins.Branta.Data.Domain.InvoiceData;
-using System.Text.Json;
 
 namespace BTCPayServer.Plugins.Branta.Services;
 
@@ -111,7 +106,7 @@ public class BtcPayBrantaService(
             logger.LogInformation("Skipped {Count} LNURL-Pay payment prompt(s)", skippedLnurl);
         }
 
-        var destinations = prompts
+        var destinationPrompts = prompts
             .Where(pp => pp.Destination != null && pp.PaymentMethodId != lnurlBtcId)
             .OrderBy(pp =>
             {
@@ -120,23 +115,13 @@ public class BtcPayBrantaService(
                 if (pp.PaymentMethodId?.ToString().Contains("Lightning") == true) return 2;
                 return 3;
             })
-            .Select(pp =>
-            {
-                var type = GetDestinationType(pp.PaymentMethodId, chainBtcId, lnBtcId);
-                return new Destination
-                {
-                    Value = pp.Destination,
-                    IsZk = type.HasValue && ZkEligibleTypes.Contains(type.Value),
-                    Type = type
-                };
-            })
             .ToList();
 
         var invoiceData = new InvoiceData()
         {
             DateCreated = now,
             InvoiceId = btcPayInvoice.Id,
-            Environment = brantaSettings.StagingEnabled ? BrantaServerBaseUrl.Staging : BrantaServerBaseUrl.Production,
+            Environment = brantaSettings.StagingEnabled ? BrantaEnvironment.Staging : BrantaEnvironment.Production,
             StoreId = btcPayInvoice.StoreId,
             PluginVersion = Helper.GetVersion()
         };
@@ -154,7 +139,7 @@ public class BtcPayBrantaService(
         var ttl = (int)(btcPayInvoice.ExpirationTime.AddMinutes(brantaSettings.TTL) - btcPayInvoice.InvoiceTime).TotalSeconds;
         invoiceData.ExpirationDate = now.AddSeconds(ttl);
 
-        if (destinations.Count == 0)
+        if (destinationPrompts.Count == 0)
         {
             invoiceData.FailureReason = skippedLnurl > 0
                 ? "LNURL and Lightning Address are not verified by Branta."
@@ -168,28 +153,30 @@ public class BtcPayBrantaService(
 
         try
         {
-            var paymentRequest = new Payment()
+            var builder = new PaymentBuilder()
+                .SetTtl(ttl);
+
+            if (brantaSettings.PostDescriptionEnabled)
             {
-                Destinations = destinations,
-                Metadata = brantaSettings.PostDescriptionEnabled
-                    ? JsonSerializer.Serialize(new { description = GetDescription(btcPayInvoice) })
-                    : null,
-                TTL = ttl,
-                BtcPayServerPluginVersion = Helper.GetVersion()
+                builder.SetDescription(GetDescription(btcPayInvoice));
+            }
+
+            foreach (var pp in destinationPrompts)
+            {
+                builder.AddDestination(pp.Destination, GetDestinationType(pp.PaymentMethodId, chainBtcId, lnBtcId));
+            }
+
+            var options = new BrantaApiOptions()
+            {
+                Environment = brantaSettings.GetBrantaServerUrl(),
+                ApiKey = brantaSettings.GetAPIKey()
             };
 
-            var options = new BrantaClientOptions()
-            {
-                BaseUrl = brantaSettings.GetBrantaServerUrl(),
-                DefaultApiKey = brantaSettings.GetAPIKey(),
-                Privacy = PrivacyMode.Loose
-            };
-
-            var (result, secret, verifyUrl) = await brantaService.AddPaymentAsync(paymentRequest, options);
-            invoiceData.VerifyUrl = verifyUrl;
-            var path = new Uri(verifyUrl).AbsolutePath;
+            var posted = await brantaService.AddPaymentAsync(builder.Build(), options);
+            invoiceData.VerifyUrl = posted.VerifyUrl;
+            var path = new Uri(posted.VerifyUrl).AbsolutePath;
             invoiceData.PaymentId = Uri.UnescapeDataString(path[(path.LastIndexOf('/') + 1)..]);
-            invoiceData.ZeroKnowledgeSecret = secret;
+            invoiceData.ZeroKnowledgeSecret = posted.Secret;
 
             invoiceData.Status = Enums.InvoiceDataStatus.Success;
         }
@@ -210,13 +197,6 @@ public class BtcPayBrantaService(
 
         return invoiceData;
     }
-
-    private static readonly HashSet<DestinationType> ZkEligibleTypes =
-    [
-        DestinationType.BitcoinAddress,
-        DestinationType.Bolt11,
-        DestinationType.ArkAddress
-    ];
 
     private static DestinationType? GetDestinationType(PaymentMethodId id, PaymentMethodId chainBtcId, PaymentMethodId lnBtcId)
     {
