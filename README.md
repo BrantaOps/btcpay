@@ -1,11 +1,3 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/BrantaOps/Assets/blob/main/svg/logo-white.svg?raw=true">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/BrantaOps/Assets/blob/main/svg/logo-black.svg?raw=true">
-    <img alt="Branta" src="Branta/Assets/goldblackcropped.jpg" width="500">
-  </picture>
-</p>
-
 # Branta BTCPay Plugin
 
 A template for your own [BTCPay Server](https://github.com/btcpayserver) plugin.
